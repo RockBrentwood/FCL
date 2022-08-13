@@ -1,0 +1,183 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=windows-1252"><title>PCbO: Parallel CbO</title>
+    <link rel="stylesheet" href="Files/Steely.css" type="text/css">
+    <style type="text/css">
+      a:link, a:hover, a:visited { color: rgb(230,120,0); }
+      h3 { font-weight: normal; }
+      #footer { text-align: right; margin-top: 42px; }
+      #footer a { color: black; font-weight: normal; }
+      em { font-weight: normal; font-style: italic; }
+      strong { font-style: normal; }
+      #download { text-align: center; }
+      table { margin: 1em auto 1em auto; }
+      td { padding: .4em; border-left: solid 1px; border-bottom: solid 1px; }
+      tr:first-child > td { border-top: solid 1px; font-style: italic; }
+      td:last-child { border-right: solid 1px; }
+    </style>
+</head><body>
+<h1>PCbO: Parallel CbO</h1>
+<h2>NAME</h2>
+
+<p>
+
+pcbo - computes formal concepts and maximal frequent itemsets
+</p><h2>SYNOPSIS</h2>
+
+<b>pcbo</b>
+
+[<i>OPTION</i>]... [<i>INPUT-FILE</i>] [<i>OUTPUT-FILE</i>]
+<h2>DESCRIPTION</h2>
+
+<p>
+
+This program computes intents of all formal concepts in an object-attribute
+data set (a formal context), i.e. the algorithm computes all maximal submatrices
+of a boolean matrix which are full of 1's. The program implements PCbO,
+a parallel algorithm based on Kuznetsov's CbO.
+</p><p>
+
+The <i>INPUT-FILE</i> is in the usual FIMI format: each line represents
+a transaction or an object and it contains of a list of
+attributes/features/items. If the <i>INPUT-FILE</i> is omitted or if it equals
+to `<i>-</i>', the program reads the input form the <i>stdin</i>.
+The <i>OUTPUT-FILE</i> has a similar
+format, each line represents one intent (itemset), where numbers indicate
+attributes in the intent (itemset). If the <i>OUTPUT-FILE</i> is omitted or
+if it equals to `<i>-</i>', the program writes the input to the <i>stdout</i>.
+</p><h3>Optional arguments</h3>
+
+<dl compact="compact">
+<dt><b>-</b><i>index</i>,</dt><dd>
+sets the initial <i>index</i> of the first attribute. The default value is 0,
+meaning that attributes are numbered from 0 upwards. If a data set uses
+attributes numbered from 1, you should use the `<b>-1</b>' switch, and so on.
+</dd><dt><b>-P</b><i>cpus</i>,</dt><dd>
+sets the number of threads to <i>cpus</i>. The default value is 1, meaning that
+<i>pcbo</i> runs in the single-threaded version. In order to benefit from the
+parallel computation, you have to set <i>cpus</i> to at least 2. The recommended
+values is the number of hardware processors (processor cores) in your system or
+higher (typically, two or three times the number of all CPU cores).
+</dd><dt><b>-L</b><i>depth</i>,</dt><dd>
+sets the initial stage recursion level to <i>depth</i>. The value influences the
+number of formal concepts which are computed during the initial sequential
+stage. Namely, the algorithm first computes all concepts which are derivable in
+less than <i>depth</i> steps. The default value is 3. A reasonable choice of
+the value is 3 or 4. In general, higher values may lead to a more uniform
+distribution of concepts over the separate threads. On the other hand, too
+large values of <i>depth</i> degrade the parallel computation into the
+serial one. Some experimentation to achieve the best results is necessary.
+Anyway, a good starting value seems to be 3 or 4.
+</dd><dt><b>-S</b><i>min-support</i>,</dt><dd>
+the minimal support considered is set to <i>min-support</i>. The default value
+is 0, meaning that the support is disregarded and all intents (itemsets)
+are written to the output. If <i>min-support</i> is set to a positive value,
+only itemsets having extents with at least <i>min-support</i> are written
+to the output.
+</dd><dt><b>-V</b><i>level</i>,</dt><dd>
+sets the verbosity <i>level</i> to a specified value. Permitted values are
+numbers from 0 up to 3. The default value is 1. Verbosity level 0 (no output)
+just computes the intents and produces no output. Verbosity level 1 produces
+lists of intents with no auxiliary output. Verbosity levels 2 and higher
+write additional information to <i>stderr</i>.
+</dd></dl>
+<h2>EXAMPLES</h2>
+
+<b>pcbo -1 mushroom.dat</b>
+
+<p>
+
+Computes all intents in the file named <b>mushroom.dat</b> where <b>1</b> denotes
+the first attribute in <b>mushroom.dat</b>. The output is
+written to the standard output.
+</p><p>
+
+<b>pcbo -1 -P6 mushroom.dat</b>
+
+</p><p>
+
+Computes all intents in <b>mushroom.dat</b> with first attribute <b>1</b> using <b>6</b>
+threads. The output is written to the standard output.
+</p><p>
+
+<b>pcbo -P8 -L4 foo.dat output-intents.dat</b>
+
+</p><p>
+
+Computes all intents in <b>mushroom.dat</b> with <b>8</b> threads using the
+initial stage recursion depth <b>4</b>, and writing results to
+<b>output-intents.dat</b>.
+</p><p>
+
+<b>pcbo -P4 -L3 -V2 - output.dat</b>
+
+</p><p>
+
+Computes all intents in data from the standard input with <b>4</b> threads
+using the initial stage recursion depth <b>3</b>, and verbosity level <b>2</b>,
+writing result to <b>output.dat</b>.
+</p><h2>AUTHORS</h2>
+
+<p>
+
+Written by Petr Krajca, Jan Outrata, and Vilem Vychodil.
+</p><h2>REPORTING BUGS</h2>
+
+<p>
+
+Report bugs to &lt;<a href="mailto:fcalgs-bugs@lists.sourceforge.net">fcalgs-bugs@lists.sourceforge.net</a>&gt;.
+</p><h2>COPYRIGHT</h2>
+
+<p>
+
+GNU GPL 2 (<a href="http://www.gnu.org/licenses/gpl-2.0.html">http://www.gnu.org/licenses/gpl-2.0.html</a>).
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+</p><p>
+
+Users in academia are kindly asked to cite the following resources if
+the software is used to pursue any research activities which may result
+in publications:
+</p><p>
+
+Krajca P., Outrata J., Vychodil V.: Parallel Algorithm for
+Computing Fixpoints of Galois Connections.<br>
+<em>Annals of Mathematics and Artificial Intelligence</em>
+<strong>59</strong>(2)(2010), pp. 257–272.<br>
+<a href="http://dx.doi.org/10.1007/s10472-010-9199-5">DOI
+10.1007/s10472–010–9199–5</a>, ISSN 1012–2443 (paper),
+1573–7470 (online)
+
+</p><p>
+Krajca P., Outrata J., Vychodil V.: Parallel Recursive Algorithm for FCA.<br>
+In: Belohlavek R., Kuznetsov S. O. (Eds.): <em>Proc. CLA 2008</em>, pp. 71–82.<br>
+<a href="http://ceur-ws.org/Vol-433/">CEUR WS, Vol. 433</a>, ISBN 978–80–244–2111–7
+
+</p><h2>DOWNLOAD</h2>
+
+<p>
+The program can be obtained from
+<a href="http://fcalgs.sourceforge.net/">http://fcalgs.sourceforge.net</a>
+
+</p><h2>SEE ALSO</h2>
+
+<p>
+
+<!--Preliminary version of PCbO is described in the aforementioned
+paper that can be downloaded from
+<P>
+
+<A HREF="http://sunsite.informatik.rwth-aachen.de/Publications/CEUR-WS/Vol-433/paper6.pdf">http://sunsite.informatik.rwth-aachen.de/Publications/CEUR-WS/Vol-433/paper6.pdf</A>
+<P>-->
+
+Further information can be found at
+<a href="http://fcalgs.sourceforge.net/">http://fcalgs.sourceforge.net</a>
+    </p><p id="footer">
+      © 2009 <a href="http://vychodil.inf.upol.cz/">Vilem Vychodil</a>, <a href="mailto:vilem.vychodil@upol.cz">vilem.vychodil@upol.cz</a>,
+      2017 <a href="http://outrata.inf.upol.cz/">Jan Outrata</a>, <a href="mailto:jan.outrata@upol.cz">jan.outrata@upol.cz</a>;
+      hosted by 
+      <a href="http://sourceforge.net/projects/fcalgs"><img src="Files/sflogo.png" alt="Get fcalgs at SourceForge.net. Fast, secure and Free Open Source software downloads" width="80" height="15" border="0"></a>
+    </p>
+
+
+</body></html>
