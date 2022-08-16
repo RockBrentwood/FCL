@@ -1,8 +1,15 @@
+APPS=fcbo
+
 ifneq (, $(findstring Windows, $(OS)))
 WINDOWS=1
-CC=gcc
+X=.exe
+PLATFORM=windows
+else
+X=
+PLATFORM=linux
 endif
 
+CC=gcc
 CFLAGS=-Wall -pedantic
 
 FOPT=-O3 -fomit-frame-pointer
@@ -12,9 +19,9 @@ FAMD64=-m64
 FSPARC=-m64 -mcpu=niagara -mtune=niagara
 ifeq ($(WINDOWS), 1)
 ARCH=i686
-FARCH=$(FI686)
 else
 ARCH=$(shell uname -m)
+endif
 ifeq ($(ARCH), i686)
 FARCH=$(FI686)
 endif
@@ -24,40 +31,27 @@ endif
 ifeq ($(ARCH), sparc64)
 FARCH=$(FSPARC)
 endif
-endif
 
 .PHONY: all debug static clean
 
-all: fcbo
+all: $(APPS)
 
-debug: fcbo-debug
+debug: $(addsuffix -debug,$(APPS))
 
-static: fcbo-static
+static: $(addsuffix -static,$(APPS))
 
 fcbo: %: %.c
-ifeq ($(WINDOWS), 1)
-	$(CC) $(CFLAGS) $(FOPT) $(FARCH) -o $@.exe $^
-	strip $@.exe
-else
-	$(CC) $(CFLAGS) $(FOPT) $(FARCH) -o $@ $^
-	strip $@
-endif
+	$(CC) $(CFLAGS) $(FOPT) $(FARCH) -o $@$X $^
+	strip $@$X
 
 fcbo-debug: %-debug: %.c
-ifeq ($(WINDOWS), 1)
-	$(CC) $(CFLAGS) -g $(FARCH) -o $@.exe $^
-else
-	$(CC) $(CFLAGS) -g $(FARCH) -o $@ $^
-endif
+	$(CC) $(CFLAGS) -g $(FARCH) -o $@$X $^
 
 fcbo-static: %-static: %.c
-ifeq ($(WINDOWS), 1)
-	$(CC) $(CFLAGS) $(FOPT) $(FARCH) -static -o $@-windows-$(ARCH).exe $^
-	strip $@-windows-$(ARCH).exe
-else
-	$(CC) $(CFLAGS) $(FOPT) $(FARCH) -static -o $@-linux-$(ARCH) $^
-	strip $@-linux-$(ARCH)
-endif
+	$(CC) $(CFLAGS) $(FOPT) $(FARCH) -static -o $@-$(PLATFORM)-$(ARCH)$X $^
+	strip $@-$(PLATFORM)-$(ARCH)$X
 
 clean:
-	rm -f fcbo fcbo-debug fcbo-static* *.exe
+	rm -f $(APPS)$X
+	rm -f $(APPS)-debug$X
+	rm -f $(APPS)-static*$X

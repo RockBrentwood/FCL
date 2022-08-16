@@ -1,13 +1,16 @@
-PROGRAMS=iteress
+APPS=iteress
 
 ifneq (, $(findstring Windows, $(OS)))
 WINDOWS=1
+X=.exe
+PLATFORM=windows
+else
+X=
+PLATFORM=$(shell uname -s | tr '[:upper:]' '[:lower:]')
 endif
 
-CFLAGS+=-Wall -pedantic -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
-ifeq ($(WINDOWS), 1)
 CC=gcc
-endif
+CFLAGS=-Wall -pedantic -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
 
 FOPT=-O3 -fomit-frame-pointer
 
@@ -28,39 +31,26 @@ ifeq ($(ARCH), sparc64)
 FARCH=$(FSPARC)
 endif
 
-ifeq ($(WINDOWS), 1)
-PLATFORM=windows
-else
-PLATFORM=$(shell uname -s | tr '[:upper:]' '[:lower:]')
-endif
-
-COMPILE=$(CC) $(CFLAGS) $(FOPT) $(FARCH) -o $@ $(filter %.c,$^)
-COMPILE_debug=$(CC) $(CFLAGS) $(FARCH) -g -o $@ $(filter %.c,$^)
-COMPILE_static=$(CC) $(CFLAGS) $(FOPT) $(FARCH) -static -o $@ $(filter %.c,$^)
-ifeq ($(WINDOWS), 1)
-STRIP=strip $@.exe
-else
-STRIP=strip $@
-endif
-
 .PHONY: all debug static clean
 
-all: $(PROGRAMS)
+all: $(APPS)
 
-debug: $(addsuffix -debug,$(PROGRAMS))
+debug: $(addsuffix -debug,$(APPS))
 
-static: $(addsuffix -static,$(PROGRAMS))
+static: $(addsuffix -static,$(APPS))
 
 iteress: %: %.c
-	$(COMPILE)
-	$(STRIP)
+	$(CC) $(CFLAGS) $(FOPT) $(FARCH) -o $@$X $^
+	strip $@$X
 
 iteress-debug: %-debug: %.c
-	$(COMPILE_debug)
+	$(CC) $(CFLAGS) $(FARCH) -g -o $@$X $^
 
 iteress-static: %-static: %.c
-	$(subst $@,$@-$(PLATFORM)-$(ARCH),$(COMPILE_static))
-	$(subst $@,$@-$(PLATFORM)-$(ARCH),$(STRIP))
+	$(CC) $(CFLAGS) $(FOPT) $(FARCH) -static -o $@-$(PLATFORM)-$(ARCH)$X $^
+	strip $@-$(PLATFORM)-$(ARCH)$X
 
 clean:
-	rm -f $(PROGRAMS) $(addsuffix -debug,$(PROGRAMS)) $(addsuffix -static-$(PLATFORM)-$(ARCH),$(PROGRAMS)) $(addsuffix .exe,$(PROGRAMS) $(addsuffix -debug,$(PROGRAMS)) $(addsuffix -static-$(PLATFORM)-$(ARCH),$(PROGRAMS)))
+	rm -f $(APPS)$X
+	rm -f $(APPS)-debug$X
+	rm -f $(APPS)-static*$X
