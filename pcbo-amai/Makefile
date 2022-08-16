@@ -1,7 +1,4 @@
 CFLAGS=-Wall -pedantic
-ifeq (, $(findstring Windows, $(OS)))
-CFLAGS+=-ansi
-endif
 
 FOPT=-O3 -fomit-frame-pointer
 

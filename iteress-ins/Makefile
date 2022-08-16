@@ -4,7 +4,7 @@ ifneq (, $(findstring Windows, $(OS)))
 WINDOWS=1
 endif
 
-CFLAGS+=-Wall -ansi -pedantic -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
+CFLAGS+=-Wall -pedantic -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
 ifeq ($(WINDOWS), 1)
 CC=gcc
 endif

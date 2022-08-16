@@ -1,25 +1,25 @@
-/*  FCbO: Fast Close-by-One (INS Version; http://fcalgs.sourceforge.net/)
- *
- *  Copyright (C) 2007-2010
- *  Jan Outrata, <jan.outrata@upol.cz>
- *  Vilem Vychodil, <vilem.vychodil@upol.cz>
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License version 2 as
- *  published by the Free Software Foundation.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- */
+// FCbO: Fast Close-by-One (INS Version; http://fcalgs.sourceforge.net/)
+//
+// Copyright (C) 2007-2010
+// Jan Outrata, <jan.outrata@upol.cz>
+// Vilem Vychodil, <vilem.vychodil@upol.cz>
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License version 2 as
+// published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <sys/time.h>
 
@@ -61,19 +61,16 @@ int *buff = NULL;
 int buff_index = 0;
 size_t buff_size = BUFFER_BLOCK;
 
-int get_next_integer(file, value)
-FILE *file;
-int *value;
-{
+bool get_next_integer(FILE *file, int *value) {
    int ch = ' ';
    *value = -1;
    while ((ch != EOF) && ((ch < '0') || (ch > '9'))) {
       ch = fgetc(file);
       if (ch == '\n')
-         return 1;
+         return true;
    }
    if (ch == EOF)
-      return 0;
+      return false;
    *value = 0;
    while ((ch >= '0') && (ch <= '9')) {
       *value *= 10;
@@ -82,13 +79,10 @@ int *value;
    }
    ungetc(ch, file);
    *value -= attr_offset;
-   return 1;
+   return true;
 }
 
-void allocate_buffer(buffer, size)
-int **buffer;
-int size;
-{
+void allocate_buffer(int **buffer, int size) {
    if (*buffer)
       *buffer = (int *)realloc(*buffer, INT_SIZE * size);
    else
@@ -108,9 +102,7 @@ int size;
    buff_index++; \
 }
 
-void read_file(file)
-FILE *file;
-{
+void read_file(FILE *file) {
    int last_value = -1, value = 0, last_attribute = -1, last_object = -1;
    allocate_buffer(&buff, buff_size);
    while (get_next_integer(file, &value)) {
@@ -166,12 +158,9 @@ void initialize_output(void) {
       attrib_numbers[i] = i;
 }
 
-void print_attributes(set, supp)
-unsigned long *set;
-size_t supp;
-{
+void print_attributes(unsigned long *set, size_t supp) {
    int i, j, c;
-   int first = 1;
+   bool first = true;
    if (verbosity_level <= 0)
       return;
    for (c = j = 0; j < int_count_a; j++) {
@@ -180,7 +169,7 @@ size_t supp;
             if (!first)
                fprintf(out_file, " ");
             fprintf(out_file, "%i", attrib_numbers[c]);
-            first = 0;
+            first = false;
          }
          c++;
          if (c >= attributes)
@@ -191,9 +180,7 @@ out:
    fprintf(out_file, "\n");
 }
 
-int cols_compar(a, b)
-void *a, *b;
-{
+int cols_compar(const void *a, const void *b) {
    int x, y;
    x = supps[*(int const *)a];
    y = supps[*(int const *)b];
@@ -210,9 +197,7 @@ void *a, *b;
    }
 }
 
-int rows_compar(a, b)
-void *a, *b;
-{
+int rows_compar(const void *a, const void *b) {
    int i;
    for (i = 0; i < int_count_a; i++)
       if (((unsigned long *)a)[i] < ((unsigned long *)b)[i])
@@ -282,10 +267,7 @@ void initialize_algorithm(void) {
       }
 }
 
-void compute_closure(intent, extent, prev_extent, attr_extent, supp)
-unsigned long *intent, *extent, *prev_extent, *attr_extent;
-int *supp;
-{
+void compute_closure(unsigned long *intent, unsigned long *extent, unsigned long *prev_extent, unsigned long *attr_extent, int *supp) {
    int i, j, k, l;
    stats.closures++;
    memset(intent, 0xFF, BYTE_COUNT_A);
@@ -314,14 +296,7 @@ int *supp;
    }
 }
 
-void generate_from_node(intent, extent, start_int, start_bit, starts, implied, implied_stack)
-unsigned long *intent;
-unsigned long *extent;
-int start_int, start_bit;
-int *starts;
-unsigned long **implied;
-unsigned long ***implied_stack;
-{
+void generate_from_node(unsigned long *intent, unsigned long *extent, int start_int, int start_bit, int *starts, unsigned long **implied, unsigned long ***implied_stack) {
    int i, total, supp = 0;
    unsigned long *new_extent, *new_intent, *new_intent_i, *new_intents_head;
    unsigned long ***implied_stack_i = implied_stack;
@@ -407,7 +382,7 @@ void find_all_intents(void) {
    unsigned long ***implied_stack;
    intent = (unsigned long *)malloc(BYTE_COUNT_A + BYTE_COUNT_O);
    extent = intent + int_count_a;
-   compute_closure(intent, extent, NULL, NULL);
+   compute_closure(intent, extent, NULL, NULL, NULL);
    print_attributes(intent, objects);
    stats.total++;
    if (intent[int_count_a - 1] & BIT)
@@ -419,10 +394,7 @@ void find_all_intents(void) {
    generate_from_node(intent, extent, 0, ARCHBIT, starts, implied, implied_stack);
 }
 
-int main(argc, argv)
-int argc;
-char **argv;
-{
+int main(int argc, char **argv) {
    in_file = stdin;
    out_file = stdout;
    if (argc > 1) {

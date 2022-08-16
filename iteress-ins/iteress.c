@@ -1,45 +1,44 @@
-/*  FCALGS: Formal Concept Analysis (FCA) Algorithms
- *  Copyright (C) 2007
- *  Jan Outrata, <jan.outrata@upol.cz>
- *  Vilem Vychodil, <vilem.vychodil@gmail.com>
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License version 2 as
- *  published by the Free Software Foundation.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- */
+// FCALGS: Formal Concept Analysis (FCA) Algorithms
+// Copyright (C) 2007
+// Jan Outrata, <jan.outrata@upol.cz>
+// Vilem Vychodil, <vilem.vychodil@gmail.com>
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License version 2 as
+// published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-/*  Iterative Greedy Concepts on Demand from Essential Elements
- *  (IterEss) algorithm
- *  Copyright (C) 2013
- *  Jan Outrata, <jan.outrata@upol.cz>
- */
+// Iterative Greedy Concepts on Demand from Essential Elements
+// (IterEss) algorithm
+// Copyright (C) 2013
+// Jan Outrata, <jan.outrata@upol.cz>
 
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <sys/time.h>
 #include <time.h>
 
 #define STATS
 
-/* Basic data types */
+// Basic data types
 
 typedef enum { LESS = -1, EQUAL, GREATER, INCOMPARABLE } order_t;
 
 typedef long int count_t;
 typedef char small_count_t;
 
-/* Error handling */
+// Error handling
 
 typedef enum { ERROR_NOERROR = 0, ERROR_MEM_ALLOC, ERROR_VALUE, ERROR_FILE_OPEN } error_t;
 
@@ -72,7 +71,7 @@ void error(error_t type, char *msg, ...) {
    }
 }
 
-/* Counters and times */
+// Counters and times
 
 #ifdef STATS
 typedef struct {
@@ -178,7 +177,7 @@ void free_stats(stats_t **stats_p) {
 }
 #endif
 
-/* Input/Output interface */
+// Input/Output interface
 
 #define IO_BUFFER_BLOCK	1048576
 
@@ -276,9 +275,9 @@ io_buffer_t *alloc_io_buffer(io_t *io, int size) {
    return &io->buffer;
 }
 
-/* File input */
+// File input
 
-int get_next_number_from_file(FILE *file, count_t *value) {
+bool get_next_number_from_file(FILE *file, count_t *value) {
    int ch = ' ';
 
    *value = IO_END_SET;
@@ -286,15 +285,15 @@ int get_next_number_from_file(FILE *file, count_t *value) {
    while ((ch != EOF) && ((ch < '0') || (ch > '9'))) {
       ch = fgetc(file);
       if (ch == '\n')
-         return 1;
+         return true;
       if (ch == '|') {
          *value = IO_SEP_CLASS;
-         return 1;
+         return true;
       }
    }
 
    if (ch == EOF)
-      return 0;
+      return false;
 
    *value = 0;
    while ((ch >= '0') && (ch <= '9')) {
@@ -305,7 +304,7 @@ int get_next_number_from_file(FILE *file, count_t *value) {
 
    ungetc(ch, file);
 
-   return 1;
+   return true;
 }
 
 void read_file_to_io(io_t *io, FILE *file, io_flags_t flags) {
@@ -357,7 +356,7 @@ void read_file_to_io(io_t *io, FILE *file, io_flags_t flags) {
       *(io->buffer.read_ptr + 1) = classes;
 }
 
-/* File output */
+// File output
 
 #define OUTPUT_BLOCK 1024
 
@@ -366,7 +365,7 @@ void print_error(error_t type, char *msg) {
 }
 
 void write_file_from_io(io_t *io, FILE *file, io_flags_t flags) {
-   int first = 1;
+   bool first = true;
    count_t value;
 
    if ((io->buffer.read_left < OUTPUT_BLOCK) && (!(flags & OUTPUT_ALL)))
@@ -376,7 +375,7 @@ void write_file_from_io(io_t *io, FILE *file, io_flags_t flags) {
       IO_READ(io, value);
       if (value == IO_END_SET) {
          fprintf(file, "\n");
-         first = 1;
+         first = true;
       } else {
          if (!first)
             fprintf(file, " ");
@@ -400,13 +399,13 @@ void write_file_from_io(io_t *io, FILE *file, io_flags_t flags) {
             default:
                fprintf(file, "%li", value);
          }
-         first = 0;
+         first = false;
       }
    }
    reset_io(io);
 }
 
-/* Formal context */
+// Formal context
 
 typedef unsigned long int data_t;
 
@@ -676,7 +675,7 @@ void compute_ess_context(context_t *ess_context, context_t *context) {
    context_t transp_context, transp_ess_context, *tmp_context, *tmp_ess_context;
    count_t o, i, p, total;
    int j, n;
-   int geq, leq;
+   bool geq, leq;
 
    copy_context(ess_context, context);
    copy_context(&transp_context, context);
@@ -688,12 +687,12 @@ void compute_ess_context(context_t *ess_context, context_t *context) {
    for (n = 0; n < 2; n++) {
       for (o = 0; o < tmp_context->objects; o++)
          for (p = o + 1; p < tmp_context->objects; p++) {
-            geq = leq = 1;
+            geq = leq = true;
             for (i = 0; (geq || leq) && (i < tmp_context->dt_count_a); i++) {
                if (geq && (~tmp_context->rows[o][i] & tmp_context->rows[p][i]))
-                  geq = 0;
+                  geq = false;
                if (leq && (tmp_context->rows[o][i] & ~tmp_context->rows[p][i]))
-                  leq = 0;
+                  leq = false;
             }
             if (geq && !leq)
                for (i = 0; i < tmp_context->dt_count_a; i++)
@@ -731,10 +730,7 @@ void compute_ess_context(context_t *ess_context, context_t *context) {
    destroy_context(&transp_ess_context);
 }
 
-void _transform_objects_to_context(objects, from_objects, context, from_context)
-data_t **objects, **from_objects;
-context_t *context, *from_context;
-{
+void _transform_objects_to_context(data_t **objects, data_t **from_objects, context_t *context, context_t *from_context) {
    count_t o;
 
    *objects = NULL;
@@ -749,7 +745,7 @@ count_t compute_table_entries_percent(count_t table_entries, int percent) {
    return ((percent / 10) * table_entries / 10 + (percent % 10) * table_entries / 100);
 }
 
-/* Formal concept and concepts */
+// Formal concept and concepts
 
 #ifdef STATS
 enum { CONCEPTS = 0, CLOSURES, FAIL_SUPPORT, NEXT_CONCEPTS_COUNTER };
@@ -840,11 +836,7 @@ void compute_closure_plus_attr(data_t *intent, data_t **extent, data_t **prev_ex
    }
 }
 
-void compute_extent_from_attrs(extent, attrs, context)
-data_t **extent;
-data_t *attrs;
-context_t *context;
-{
+void compute_extent_from_attrs(data_t **extent, data_t *attrs, context_t *context) {
    count_t o, i;
    data_t data = 0;
 
@@ -859,11 +851,7 @@ context_t *context;
    *extent = (data_t *)data;
 }
 
-void compute_intent_from_objects(intent, objects, context)
-data_t *intent;
-data_t **objects;
-context_t *context;
-{
+void compute_intent_from_objects(data_t *intent, data_t **objects, context_t *context) {
    count_t o, i;
    data_t data;
 
@@ -877,20 +865,12 @@ context_t *context;
    }
 }
 
-__inline void compute_closure_from_attrs(intent, extent, attrs, context)
-data_t *intent, *attrs;
-data_t **extent;
-context_t *context;
-{
+__inline void compute_closure_from_attrs(data_t *intent, data_t **extent, data_t *attrs, context_t *context) {
    compute_extent_from_attrs(extent, attrs, context);
    compute_intent_from_objects(intent, extent, context);
 }
 
-__inline void compute_closure_from_objects(intent, extent, objects, context)
-data_t *intent;
-data_t **extent, **objects;
-context_t *context;
-{
+__inline void compute_closure_from_objects(data_t *intent, data_t **extent, data_t **objects, context_t *context) {
    compute_intent_from_objects(intent, objects, context);
    compute_extent_from_attrs(extent, intent, context);
 }
@@ -971,7 +951,7 @@ void save_concept_to_list(data_t *intent, data_t **extent, context_t *context, c
    }
 }
 
-/* Boolean factors as formal concepts */
+// Boolean factors as formal concepts
 
 #ifdef STATS
 enum { FACTORS = 0, UNCOVERED = 2, OVERCOVERED, NEXT_FACTORS_COUNTER };
@@ -1024,7 +1004,7 @@ void output_factor_to_io(data_t *intent, data_t **extent, context_t *context, io
    IO_FUNC(io, 0);
 }
 
-/* IterEss algorithm */
+// IterEss algorithm
 
 #ifdef STATS
 enum { ESS_CONTEXTS = NEXT_FACTORS_COUNTER };
@@ -1122,7 +1102,7 @@ void find_factors(context_t *context, factors_t *factors COMMA STATS_DATA_PARAM)
          INC_COUNTER(CLOSURES);
       }
 
-      while (1) {
+      while (true) {
          factor_size = 0;
 
          for (factor_concepts->iter = factor_concepts->start; factor_concepts->iter < factor_concepts->end; factor_concepts->iter = (data_t *)(factor_concepts_extent + (count_t)*factor_concepts_extent + 1)) {
@@ -1140,7 +1120,7 @@ void find_factors(context_t *context, factors_t *factors COMMA STATS_DATA_PARAM)
             size = best_size = 0;
             attribute_intents.iter = attribute_intents.start;
 
-            while (1) {
+            while (true) {
                for (total = j = 0; j < context->dt_count_a; j++) {
                   for (i = ARCHBIT; i >= 0; i--) {
                      if (total >= context->attributes)
@@ -1324,7 +1304,7 @@ int find_factors_process_args(int argc, char **argv) {
    return index;
 }
 
-/* CLI prints */
+// CLI prints
 
 typedef enum {
    VERBOSITY_NONE = 0, VERBOSITY_OUTPUT, VERBOSITY_STATS,
@@ -1364,8 +1344,8 @@ void print_stats(STATS_DATA_PARAM) {
 }
 #endif
 
-/* CLI Boolean factors as formal concepts finding main, prints and
- * help */
+// CLI Boolean factors as formal concepts finding main, prints and
+// help
 
 void print_factor_info(data_t *intent, data_t **extent, context_t *context, concept_flags_t flags COMMA STATS_DATA_PARAM) {
 #ifndef STATS
@@ -1382,7 +1362,7 @@ void print_factor_info(data_t *intent, data_t **extent, context_t *context, conc
 #endif
 }
 
-void main_help() {
+void main_help(void) {
    fprintf(stderr, "%s [-Vverbosity] [-attr_offset] [-Tthreshold] [-Smin_support] [-Oa|-Oo|-Of] [-sc|-sr|-sb]", program_name);
    find_factors_help(0);
    fprintf(stderr, " [input_filename [output_filename]]\n");
@@ -1450,7 +1430,7 @@ int main_process_args(int argc, char **argv) {
    return index;
 }
 
-void main_program() {
+void main_program(void) {
    context_t context;
    io_t io;
    factors_t factors;
@@ -1513,12 +1493,12 @@ void main_program() {
    destroy_context(&context);
 }
 
-/* CLI main */
+// CLI main
 
 int main(int argc, char **argv) {
    int index = 1;
    int shift;
-   int input_file_stdin = 0;
+   bool input_file_stdin = false;
 
    set_error(argv[0], (error_func_t *)print_error);
 
@@ -1529,7 +1509,7 @@ int main(int argc, char **argv) {
       if (argv[index][0] == '-') {
          switch (argv[index][1]) {
             case 0:
-               input_file_stdin = 1;
+               input_file_stdin = true;
                index++;
                break;
             case 'V':

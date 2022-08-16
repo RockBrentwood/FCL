@@ -1,38 +1,36 @@
-/*
- *  PCbO: Parallel Close-by-One (AMAI Version; http://fcalgs.sourceforge.net/)
- *
- *  Copyright (C) 2007-2009
- *  Petr Krajca, <petr.krajca@upol.cz>
- *  Jan Outrata, <jan.outrata@upol.cz>
- *  Vilem Vychodil, <vilem.vychodil@upol.cz>
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License version 2 as
- *  published by the Free Software Foundation.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *
- ******************************************************************************
- *
- *  Users in academia are kindly asked to cite the following resources if the
- *  program is used to pursue any research activities which may result in
- *  publications:
- *
- *  Krajca P., Outrata J., Vychodil V.: Parallel Recursive Algorithm for FCA.
- *  In: Proc. CLA 2008, CEUR WS, 433(2008), 71-82. ISBN 978-80-244-2111-7.
- *  http://sunsite.informatik.rwth-aachen.de/Publications/CEUR-WS/Vol-433/
- *
- */
+// PCbO: Parallel Close-by-One (AMAI Version; http://fcalgs.sourceforge.net/)
+//
+// Copyright (C) 2007-2009
+// Petr Krajca, <petr.krajca@upol.cz>
+// Jan Outrata, <jan.outrata@upol.cz>
+// Vilem Vychodil, <vilem.vychodil@upol.cz>
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License version 2 as
+// published by the Free Software Foundation.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+//
+// ===========================================================================
+//
+// Users in academia are kindly asked to cite the following resources if the
+// program is used to pursue any research activities which may result in
+// publications:
+//
+// Krajca P., Outrata J., Vychodil V.: Parallel Recursive Algorithm for FCA.
+// In: Proc. CLA 2008, CEUR WS, 433(2008), 71-82. ISBN 978-80-244-2111-7.
+// http://sunsite.informatik.rwth-aachen.de/Publications/CEUR-WS/Vol-433/
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #ifdef WINNT
 #   include <windows.h>
@@ -96,19 +94,16 @@ struct thread_stat {
 struct thread_stat *counts;
 struct thread_stat initial_thr_stat;
 
-int get_next_integer(file, value)
-FILE *file;
-int *value;
-{
+bool get_next_integer(FILE *file, int *value) {
    int ch = ' ';
    *value = -1;
    while ((ch != EOF) && ((ch < '0') || (ch > '9'))) {
       ch = fgetc(file);
       if (ch == '\n')
-         return 1;
+         return true;
    }
    if (ch == EOF)
-      return 0;
+      return false;
    *value = 0;
    while ((ch >= '0') && (ch <= '9')) {
       *value *= 10;
@@ -121,7 +116,7 @@ int *value;
       fprintf(stderr, "Invalid input value: %i (minimum value is %i), quitting.\n", *value + attr_offset, attr_offset);
       exit(1);
    }
-   return 1;
+   return true;
 }
 
 #define PUSH_NEW_INTEGER(__value) { \
@@ -137,9 +132,7 @@ int *value;
    index++; \
 }
 
-void table_of_ints_init(max)
-int max;
-{
+void table_of_ints_init(int max) {
    int i;
    table_of_ints = malloc(sizeof(struct str_int) * max);
    for (i = 0; i < max; i++) {
@@ -148,9 +141,7 @@ int max;
    }
 }
 
-void read_context(file)
-FILE *file;
-{
+void read_context(FILE *file) {
    int last_value = -1, value = 0, last_attribute = -1, last_object = -1;
    int *buff, i, index = 0, row = 0;
    size_t buff_size = BUFFER_BLOCK;
@@ -199,13 +190,12 @@ FILE *file;
    free(buff);
 }
 
-void print_attributes(set)
-const unsigned long *set;
-{
-   int i, j, c, first = 1;
+void print_attributes(const unsigned long *set) {
+   int i, j, c;
+   bool first = true;
    char buf[OUTPUT_BUF_CAPACITY + MAX_DECIMAL_INT_SIZE + 2];
    int buf_ptr = 0;
-   int locked = 0;
+   bool locked = false;
    if (verbosity_level <= 0)
       return;
    for (c = j = 0; j < int_count_a; j++) {
@@ -224,11 +214,11 @@ const unsigned long *set;
 #else
                   pthread_mutex_lock(&output_lock);
 #endif
-                  locked = 1;
+                  locked = true;
                }
                fputs(buf, out_file);
             }
-            first = 0;
+            first = false;
          }
          c++;
          if (c >= attributes)
@@ -258,19 +248,12 @@ void print_context_info(void) {
       fprintf(stderr, "(:objects %6i :attributes %4i :entries %8i)\n", objects, attributes, table_entries);
 }
 
-void print_thread_info(id, stat)
-int id;
-struct thread_stat stat;
-{
+void print_thread_info(int id, struct thread_stat stat) {
    if (verbosity_level >= 2)
       fprintf(stderr, "(:proc %3i :closures %7i :computed %7i :queue-length %3i)\n", id, stat.closures, stat.computed, stat.queue_length);
 }
 
-void print_initial_thread_info(levels, stat, last_level_concepts)
-int levels;
-struct thread_stat stat;
-int last_level_concepts;
-{
+void print_initial_thread_info(int levels, struct thread_stat stat, int last_level_concepts) {
    if (verbosity_level >= 2)
       fprintf(stderr, "(:proc %3i :closures %7i :computed %7i :levels %i :last-level-concepts %i)\n", 0, stat.closures, stat.computed, levels + 1, last_level_concepts);
 }
@@ -305,10 +288,7 @@ void initialize_algorithm(void) {
    table_of_ints_init(attributes);
 }
 
-void compute_closure(intent, extent, prev_extent, atr_extent, supp)
-unsigned long *intent, *extent, *prev_extent, *atr_extent;
-size_t *supp;
-{
+void compute_closure(unsigned long *intent, unsigned long *extent, unsigned long *prev_extent, unsigned long *atr_extent, size_t *supp) {
    int i, j, k, l;
    memset(intent, 0xFF, BYTE_COUNT_A);
    if (atr_extent) {
@@ -332,12 +312,7 @@ size_t *supp;
    }
 }
 
-void generate_from_node(intent, extent, start_int, start_bit, id)
-unsigned long *intent;
-unsigned long *extent;
-int start_int, start_bit;
-int id;
-{
+void generate_from_node(unsigned long *intent, unsigned long *extent, int start_int, int start_bit, int id) {
    int i, total;
    size_t supp = 0;
    unsigned long *new_extent;
@@ -382,9 +357,7 @@ unsigned __stdcall
 #else
 void *
 #endif
-thread_func(params)
-void *params;
-{
+thread_func(void *params) {
    int id;
    id = *(int *)params;
    for (; thread_queue_head[id] < thread_queue[id];) {
@@ -400,12 +373,7 @@ void *params;
 #endif
 }
 
-void parallel_generate_from_node(intent, extent, start_int, start_bit, rec_level, id)
-unsigned long *intent;
-unsigned long *extent;
-int start_int, start_bit, rec_level;
-int id;
-{
+void parallel_generate_from_node(unsigned long *intent, unsigned long *extent, int start_int, int start_bit, int rec_level, int id) {
    int i, total;
    static int num = 0;
    size_t supp = 0;
@@ -543,10 +511,7 @@ void find_all_intents(void) {
       fprintf(stderr, "INFO: total %7i concepts\n", counts[0].computed);
 }
 
-int main(argc, argv)
-int argc;
-char **argv;
-{
+int main(int argc, char **argv) {
    in_file = stdin;
    out_file = stdout;
    if (argc > 1) {

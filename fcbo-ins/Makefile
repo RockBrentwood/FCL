@@ -4,9 +4,6 @@ CC=gcc
 endif
 
 CFLAGS=-Wall -pedantic
-ifneq ($(WINDOWS), 1)
-CFLAGS+=-ansi
-endif
 
 FOPT=-O3 -fomit-frame-pointer
 
