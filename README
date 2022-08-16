@@ -12,3 +12,6 @@ Orignal source:
 Distributed - both there and here - under
 	GNU General Public License Version 2:
 	http://www.gnu.org/licenses/gpl-2.0.html
+
+One of the purposes of this toolset, apart from research and development into concept lattices,
+is to aid in code synthesis; e.g., finding natural combinations of data/arguments for a suite of functions or tools.
