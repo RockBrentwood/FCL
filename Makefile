@@ -79,7 +79,14 @@ pcbo-static: %-static: %.c
 	$(CC) $(CFLAGS) $(FOPT) $(FARCH) -static -o $@-$(PLATFORM)-$(ARCH)$X $^ $(LIBS)
 	$(STRIP_STATIC)
 
+test: $(APPS)
+	sh test.sh
+
 clean:
+	rm -f Log
+	rm -f *.ex
+
+clobber: clean
 	rm -f $(APPS)$X
 	rm -f $(APPS)-debug$X
 	rm -f $(APPS)-static*$X
