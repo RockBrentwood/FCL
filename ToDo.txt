@@ -1,0 +1,26 @@
+Generalized and Expanded FCL method
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+▪	⒈	Get the list of concept-attribute pairs.
+▪		∙	Read in the (Concept, Attribute) pairs
+·		∙	Or read in a list of concepts, each containing a sublist of attributes
+·		∙	Or read in a list of attributes, each containing a sublist of concepts
+▪		While getting the list, set up the concept and attribute rosters.
+▪	⒉	Lay out the Context matrix
+▪		∙	Allocate an empty matrix of size based on the sizes of the respective rosters.
+▪		∙	Run through the (Concept, Attribute) and mark each item in the matrix
+▪	⒊	Apply the FCA-synthesis algorithm to obtain the Galois-pairs
+▪	⒋	Topologically sort the lattice
+	⒌	Reorder the objects and attributes by affinity and factor-score them
+	⒍	Minimize the concept-lattice
+	⒎	Scan the list: for each attribute, mark the place where it first occurs.
+		Reverse-scan the list: for each concept, mark the place where it last occurs.
+		Scan the respective rosters and mark each entry by the corredponding attribute and/or concept.
+	⒏	Display the results in topological order with:
+		∙	Marked attributes
+		∙	Marked concepts
+		∙	Immediate precedessor entries
+		∙	Immediate successor entries
+	⒐	A second display mode is by
+		∙	Concept roster/index (user-defined index base)
+		∙	Attribute roster/index (user-defined index base)
+		∙	For concept-attribute pairs: the concepts, attributes, (optionally): predecessors and successors.

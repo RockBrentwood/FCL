@@ -32,21 +32,41 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <ctype.h>
+
+// Configuration-dependent functions for mutexes and threads.
 #ifdef WINNT
 #   include <windows.h>
 #   include <process.h>
+typedef HANDLE thread_id_t;
+typedef unsigned __stdcall thread_op_t;
+const thread_op_t thread_nil = 0U;
+typedef HANDLE mutex_t;
+// #   define INIT_MUTEX
+#   define init_mutex(M) ((M) = CreateMutex(NULL, FALSE, NULL));
+#   define acquire_mutex(M) WaitForSingleObject((M), INFINITE)
+#   define release_mutex(M) ReleaseMutex((M))
+#   define init_thread(Th, Op, Arg) ((Th) = (HANDLE)_beginthreadex(NULL, 0, (Op), (Arg), 0, NULL))
+#   define join_thread(Th) (WaitForSingleObject(Th, INFINITE), CloseHandle(Th))
 #else
 #   include <pthread.h>
+typedef pthread_t thread_id_t;
+typedef void *thread_op_t;
+const thread_op_t thread_nil = NULL;
+typedef pthread_mutex_t mutex_t;
+// The distribution version initialized mutexes statically for non-Windows, instead of dynamically with pthread_mutex_init().
+// #   define INIT_MUTEX = PTHREAD_MUTEX_INITIALIZER
+#   define init_mutex(M) pthread_mutex_init(&(M), NULL)
+#   define acquire_mutex(M) pthread_mutex_lock(&(M))
+#   define release_mutex(M) pthread_mutex_unlock(&(M))
+#   define init_thread(Th, Op, Arg) pthread_create(&(Th), NULL, (Op), (Arg))
+#   define join_thread(Th) pthread_join(Th, NULL)
 #endif
 
-#define BIT		((unsigned long)1)
-#define NULL_LONG	((unsigned long)0)
-#define INT_SIZE	(sizeof(int))
-#define LONG_SIZE	(sizeof(unsigned long))
-#define ARCHBIT		((LONG_SIZE * 8) - 1)
-#define BYTE_COUNT_A	(LONG_SIZE * int_count_a)
-#define BYTE_COUNT_O	(LONG_SIZE * int_count_o)
-#define BUFFER_BLOCK	1024
+const unsigned long BitU = 1UL, NilU = 0UL;
+const size_t IntSize = sizeof(int), LongSize = sizeof(unsigned long);
+#define DATA_BITS	(8 * sizeof(unsigned long))
+const size_t BufferBlock = 0x400;
 #define MAX_DECIMAL_INT_SIZE (11)
 #define OUTPUT_BUF_CAPACITY (32 * MAX_DECIMAL_INT_SIZE)
 struct str_int {
@@ -60,32 +80,23 @@ int int_count_o = 0;
 int table_entries = 0;
 int min_support = 0;
 unsigned long *context;
-unsigned long *(*cols)[ARCHBIT + 1];
-int (*supps)[ARCHBIT + 1];
-unsigned long upto_bit[ARCHBIT + 1];
+unsigned long *(*cols)[DATA_BITS];
+int (*supps)[DATA_BITS];
+unsigned long upto_bit[DATA_BITS];
 int attr_offset = 0;
-FILE *in_file;
-FILE *out_file;
+FILE *in_file, *out_file;
+
 int cpus = 1;
 int threads;
 int para_level = 2;
 int verbosity_level = 1;
-#ifdef WINNT
-typedef HANDLE thread_id_t;
-#else
-typedef pthread_t thread_id_t;
-#endif
 thread_id_t *thread_id;
 int *thread_i;
 unsigned char **thread_queue;
 unsigned char **thread_queue_head;
 unsigned char **thread_queue_limit;
 unsigned long **thread_intents;
-#ifdef WINNT
-HANDLE output_lock;
-#else
-pthread_mutex_t output_lock = PTHREAD_MUTEX_INITIALIZER;
-#endif
+mutex_t output_lock/* INIT_MUTEX*/;
 struct thread_stat {
    int closures;
    int computed;
@@ -95,339 +106,238 @@ struct thread_stat *counts;
 struct thread_stat initial_thr_stat;
 
 bool get_next_integer(FILE *file, int *value) {
-   int ch = ' ';
    *value = -1;
-   while ((ch != EOF) && ((ch < '0') || (ch > '9'))) {
+   int ch = ' ';
+   while (ch != EOF && !isdigit(ch)) {
       ch = fgetc(file);
-      if (ch == '\n')
-         return true;
+      if (ch == '\n') return true;
    }
-   if (ch == EOF)
-      return false;
+   if (ch == EOF) return false;
    *value = 0;
-   while ((ch >= '0') && (ch <= '9')) {
+   while (isdigit(ch)) {
       *value *= 10;
       *value += ch - '0';
       ch = fgetc(file);
    }
    ungetc(ch, file);
    *value -= attr_offset;
-   if (*value < 0) {
-      fprintf(stderr, "Invalid input value: %i (minimum value is %i), quitting.\n", *value + attr_offset, attr_offset);
-      exit(1);
-   }
+   if (*value < 0) fprintf(stderr, "Invalid input value: %i (minimum value is %i), quitting.\n", *value + attr_offset, attr_offset), exit(EXIT_FAILURE);
    return true;
 }
 
 #define PUSH_NEW_INTEGER(__value) { \
    if (index >= buff_size) { \
-      buff_size += BUFFER_BLOCK; \
-      buff = (int *)realloc(buff, INT_SIZE * buff_size); \
-      if (!buff) { \
-         fprintf(stderr, "Cannot reallocate buffer, quitting.\n"); \
-         exit(4); \
-      } \
+      buff = realloc(buff, (buff_size += BufferBlock) * sizeof *buff); \
+      if (buff == NULL) fprintf(stderr, "Cannot reallocate buffer, quitting.\n"), exit(EXIT_FAILURE); \
    } \
-   buff[index] = (__value); \
-   index++; \
+   buff[index++] = (__value); \
 }
 
 void table_of_ints_init(int max) {
-   int i;
-   table_of_ints = malloc(sizeof(struct str_int) * max);
-   for (i = 0; i < max; i++) {
+   table_of_ints = malloc(max * sizeof *table_of_ints);
+   for (int i = 0; i < max; i++) {
       sprintf(table_of_ints[i].str, "%i", i);
       table_of_ints[i].length = strlen(table_of_ints[i].str);
    }
 }
 
 void read_context(FILE *file) {
-   int last_value = -1, value = 0, last_attribute = -1, last_object = -1;
-   int *buff, i, index = 0, row = 0;
-   size_t buff_size = BUFFER_BLOCK;
-   if (attr_offset < 0)
-      attr_offset = 0;
-   buff = (int *)malloc(INT_SIZE * buff_size);
-   if (!buff) {
-      fprintf(stderr, "Cannot allocate buffer, quitting.\n");
-      exit(3);
-   }
-   while (get_next_integer(file, &value)) {
-      if ((value < 0) && (last_value < 0))
-         continue;
-      if (value < 0) {
-         last_object++;
-         PUSH_NEW_INTEGER(-1);
-      } else {
-         if (value > last_attribute)
-            last_attribute = value;
-         PUSH_NEW_INTEGER(value);
-         table_entries++;
+   size_t buff_size = BufferBlock;
+   if (attr_offset < 0) attr_offset = 0;
+   int *buff = malloc(buff_size * sizeof *buff);
+   if (buff == NULL) fprintf(stderr, "Cannot allocate buffer, quitting.\n"), exit(EXIT_FAILURE);
+   int last_value = -1, last_attribute = -1, last_object = -1;
+   int index = 0;
+   for (int value = 0; get_next_integer(file, &value); )
+      if (value >= 0 || last_value >= 0) {
+         if (value < 0) {
+            last_object++;
+            PUSH_NEW_INTEGER(-1);
+         } else {
+            if (value > last_attribute) last_attribute = value;
+            PUSH_NEW_INTEGER(value);
+            table_entries++;
+         }
+         last_value = value;
       }
-      last_value = value;
-   }
    if (last_value >= 0) {
       last_object++;
       PUSH_NEW_INTEGER(-1);
    }
-   objects = last_object + 1;
-   attributes = last_attribute + 1;
-   int_count_a = (attributes / (ARCHBIT + 1)) + 1;
-   int_count_o = (objects / (ARCHBIT + 1)) + 1;
-   context = (unsigned long *)malloc(LONG_SIZE * int_count_a * objects);
-   if (!context) {
-      fprintf(stderr, "Cannot allocate bitcontext, quitting.\n");
-      exit(5);
-   }
-   memset(context, 0, LONG_SIZE * int_count_a * objects);
-   for (i = 0; i < index; i++) {
-      if (buff[i] < 0) {
+   objects = last_object + 1, int_count_o = objects / DATA_BITS + 1;
+   attributes = last_attribute + 1, int_count_a = attributes / DATA_BITS + 1;
+   context = calloc(int_count_a * objects, sizeof *context);
+   if (context == NULL) fprintf(stderr, "Cannot allocate bitcontext, quitting.\n"), exit(EXIT_FAILURE);
+   int row = 0;
+   for (int i = 0; i < index; i++)
+      if (buff[i] < 0)
          row++;
-         continue;
-      }
-      context[row * int_count_a + (buff[i] / (ARCHBIT + 1))] |= (BIT << (ARCHBIT - (buff[i] % (ARCHBIT + 1))));
-   }
+      else
+         context[row * int_count_a + buff[i] / DATA_BITS] |= BitU << (DATA_BITS - 1 - buff[i] % DATA_BITS);
    free(buff);
 }
 
 void print_attributes(const unsigned long *set) {
-   int i, j, c;
+   if (verbosity_level <= 0) return;
    bool first = true;
    char buf[OUTPUT_BUF_CAPACITY + MAX_DECIMAL_INT_SIZE + 2];
    int buf_ptr = 0;
    bool locked = false;
-   if (verbosity_level <= 0)
-      return;
-   for (c = j = 0; j < int_count_a; j++) {
-      for (i = ARCHBIT; i >= 0; i--) {
-         if (set[j] & (BIT << i)) {
-            if (!first)
-               buf[buf_ptr++] = ' ';
-            strcpy(buf + buf_ptr, table_of_ints[c].str);
-            buf_ptr += table_of_ints[c].length;
-            if (buf_ptr >= OUTPUT_BUF_CAPACITY) {
-               buf[buf_ptr] = '\0';
-               buf_ptr = 0;
-               if (!locked) {
-#ifdef WINNT
-                  WaitForSingleObject(output_lock, INFINITE);
-#else
-                  pthread_mutex_lock(&output_lock);
-#endif
-                  locked = true;
-               }
-               fputs(buf, out_file);
+   for (int j = 0, c = 0; j < int_count_a; j++) for (int i = DATA_BITS - 1; i >= 0; i--) {
+      if (set[j] & (BitU << i)) {
+         if (!first) buf[buf_ptr++] = ' ';
+         strcpy(buf + buf_ptr, table_of_ints[c].str);
+         buf_ptr += table_of_ints[c].length;
+         if (buf_ptr >= OUTPUT_BUF_CAPACITY) {
+            buf[buf_ptr] = '\0';
+            buf_ptr = 0;
+            if (!locked) {
+               acquire_mutex(output_lock);
+               locked = true;
             }
-            first = false;
+            fputs(buf, out_file);
          }
-         c++;
-         if (c >= attributes)
-            goto out;
+         first = false;
       }
+      if (++c >= attributes) goto out;
    }
 out:
    buf[buf_ptr++] = '\n';
    buf[buf_ptr] = '\0';
-   if (!locked) {
-#ifdef WINNT
-      WaitForSingleObject(output_lock, INFINITE);
-#else
-      pthread_mutex_lock(&output_lock);
-#endif
-   }
+   if (!locked) acquire_mutex(output_lock);
    fputs(buf, out_file);
-#ifdef WINNT
-   ReleaseMutex(output_lock);
-#else
-   pthread_mutex_unlock(&output_lock);
-#endif
+   release_mutex(output_lock);
 }
 
 void print_context_info(void) {
-   if (verbosity_level >= 2)
-      fprintf(stderr, "(:objects %6i :attributes %4i :entries %8i)\n", objects, attributes, table_entries);
+   if (verbosity_level >= 2) fprintf(stderr, "(:objects %6i :attributes %4i :entries %8i)\n", objects, attributes, table_entries);
 }
 
 void print_thread_info(int id, struct thread_stat stat) {
-   if (verbosity_level >= 2)
-      fprintf(stderr, "(:proc %3i :closures %7i :computed %7i :queue-length %3i)\n", id, stat.closures, stat.computed, stat.queue_length);
+   if (verbosity_level >= 2) fprintf(stderr, "(:proc %3i :closures %7i :computed %7i :queue-length %3i)\n", id, stat.closures, stat.computed, stat.queue_length);
 }
 
 void print_initial_thread_info(int levels, struct thread_stat stat, int last_level_concepts) {
-   if (verbosity_level >= 2)
-      fprintf(stderr, "(:proc %3i :closures %7i :computed %7i :levels %i :last-level-concepts %i)\n", 0, stat.closures, stat.computed, levels + 1, last_level_concepts);
+   if (verbosity_level >= 2) fprintf(stderr, "(:proc %3i :closures %7i :computed %7i :levels %i :last-level-concepts %i)\n", 0, stat.closures, stat.computed, levels + 1, last_level_concepts);
 }
 
 void initialize_algorithm(void) {
-   int i, j, x, y;
-   unsigned long *ptr;
-   unsigned long mask;
-   unsigned long *cols_buff;
-   for (i = 0; i <= ARCHBIT; i++) {
-      upto_bit[i] = NULL_LONG;
-      for (j = ARCHBIT; j > i; j--)
-         upto_bit[i] |= (BIT << j);
+   for (int i = 0; i < DATA_BITS; i++) {
+      upto_bit[i] = NilU;
+      for (int j = DATA_BITS - 1; j > i; j--) upto_bit[i] |= BitU << j;
    }
-   cols_buff = (unsigned long *)malloc(LONG_SIZE * int_count_o * (ARCHBIT + 1) * int_count_a);
-   memset(cols_buff, 0, LONG_SIZE * int_count_o * (ARCHBIT + 1) * int_count_a);
-   cols = (unsigned long *(*)[ARCHBIT + 1])malloc(sizeof(unsigned long *) * (ARCHBIT + 1) * int_count_a);
-   supps = (int (*)[ARCHBIT + 1])malloc(sizeof(int) * (ARCHBIT + 1) * int_count_a);
-   ptr = cols_buff;
-   for (j = 0; j < int_count_a; j++)
-      for (i = ARCHBIT; i >= 0; i--) {
-         mask = (BIT << i);
-         cols[j][i] = ptr;
-         supps[j][i] = 0;
-         for (x = 0, y = j; x < objects; x++, y += int_count_a)
-            if (context[y] & mask) {
-               ptr[x / (ARCHBIT + 1)] |= BIT << (x % (ARCHBIT + 1));
-               supps[j][i]++;
-            }
-         ptr += int_count_o;
-      }
+   unsigned long *cols_buff = calloc(int_count_o * DATA_BITS * int_count_a, sizeof *cols_buff);
+   cols = malloc(DATA_BITS * int_count_a * sizeof *cols), supps = malloc(DATA_BITS * int_count_a * sizeof *supps);
+   unsigned long *ptr = cols_buff;
+   for (int j = 0; j < int_count_a; j++) for (int i = DATA_BITS - 1; i >= 0; ptr += int_count_o, i--) {
+      unsigned long mask = BitU << i;
+      cols[j][i] = ptr, supps[j][i] = 0;
+      for (int x = 0, y = j; x < objects; x++, y += int_count_a)
+         if (context[y] & mask) ptr[x / DATA_BITS] |= BitU << (x % DATA_BITS), supps[j][i]++;
+   }
    table_of_ints_init(attributes);
 }
 
 void compute_closure(unsigned long *intent, unsigned long *extent, unsigned long *prev_extent, unsigned long *atr_extent, size_t *supp) {
-   int i, j, k, l;
-   memset(intent, 0xFF, BYTE_COUNT_A);
-   if (atr_extent) {
+   memset(intent, 0xff, int_count_a * sizeof *intent);
+   if (atr_extent != NULL) {
       *supp = 0;
-      for (k = 0; k < int_count_o; k++) {
+      for (int k = 0; k < int_count_o; k++) {
          extent[k] = prev_extent[k] & atr_extent[k];
-         if (extent[k])
-            for (l = 0; l <= ARCHBIT; l++)
-               if (extent[k] & (BIT << l)) {
-                  for (i = 0, j = int_count_a * (k * (ARCHBIT + 1) + l); i < int_count_a; i++, j++)
-                     intent[i] &= context[j];
-                  (*supp)++;
+         if (extent[k] != 0UL)
+            for (int l = 0; l < DATA_BITS; l++)
+               if (extent[k] & (BitU << l)) {
+                  for (int i = 0, j = int_count_a * (k * DATA_BITS + l); i < int_count_a; i++, j++) intent[i] &= context[j];
+                  ++*supp;
                }
       }
    } else {
-      memset(extent, 0xFF, BYTE_COUNT_O);
-      for (j = 0; j < objects; j++) {
-         for (i = 0; i < int_count_a; i++)
-            intent[i] &= context[int_count_a * j + i];
-      }
+      memset(extent, 0xff, int_count_o * sizeof *extent);
+      for (int j = 0; j < objects; j++) for (int i = 0; i < int_count_a; i++) intent[i] &= context[int_count_a * j + i];
    }
 }
 
 void generate_from_node(unsigned long *intent, unsigned long *extent, int start_int, int start_bit, int id) {
-   int i, total;
    size_t supp = 0;
-   unsigned long *new_extent;
-   unsigned long *new_intent;
-   new_intent = extent + int_count_o;
-   new_extent = new_intent + int_count_a;
-   total = start_int * (ARCHBIT + 1) + (ARCHBIT - start_bit);
+   unsigned long *new_intent = extent + int_count_o, *new_extent = new_intent + int_count_a;
+   int total = (start_int + 1) * DATA_BITS - 1 - start_bit;
    for (; start_int < int_count_a; start_int++) {
       for (; start_bit >= 0; start_bit--) {
-         if (total >= attributes)
-            return;
+         if (total >= attributes) goto out;
          total++;
-         if ((intent[start_int] & (BIT << start_bit)) || (supps[start_int][start_bit] < min_support))
-            continue;
+         if ((intent[start_int] & (BitU << start_bit)) || supps[start_int][start_bit] < min_support) continue;
          compute_closure(new_intent, new_extent, extent, cols[start_int][start_bit], &supp);
          counts[id].closures++;
-         if ((new_intent[start_int] ^ intent[start_int]) & upto_bit[start_bit])
-            goto skip;
-         for (i = 0; i < start_int; i++)
-            if (new_intent[i] ^ intent[i])
-               goto skip;
-         if (supp < min_support)
-            goto skip;
+         if ((new_intent[start_int] ^ intent[start_int]) & upto_bit[start_bit]) goto skip;
+         for (int i = 0; i < start_int; i++)
+            if (new_intent[i] ^ intent[i]) goto skip;
+         if (supp < min_support) goto skip;
          counts[id].computed++;
          print_attributes(new_intent);
-         if (new_intent[int_count_a - 1] & BIT)
-            goto skip;
+         if (new_intent[int_count_a - 1] & BitU) goto skip;
          if (start_bit == 0)
-            generate_from_node(new_intent, new_extent, start_int + 1, ARCHBIT, id);
+            generate_from_node(new_intent, new_extent, start_int + 1, DATA_BITS - 1, id);
          else
             generate_from_node(new_intent, new_extent, start_int, start_bit - 1, id);
       skip:
          ;
       }
-      start_bit = ARCHBIT;
+      start_bit = DATA_BITS - 1;
    }
-   return;
+out: ;
 }
 
-#ifdef WINNT
-unsigned __stdcall
-#else
-void *
-#endif
-thread_func(void *params) {
-   int id;
-   id = *(int *)params;
-   for (; thread_queue_head[id] < thread_queue[id];) {
-      memcpy(thread_intents[id], thread_queue_head[id], BYTE_COUNT_A + BYTE_COUNT_O);
-      thread_queue_head[id] += BYTE_COUNT_A + BYTE_COUNT_O;
-      generate_from_node(thread_intents[id], thread_intents[id] + int_count_a, *(int *)thread_queue_head[id], *(int *)(thread_queue_head[id] + INT_SIZE), id);
-      thread_queue_head[id] += INT_SIZE << 1;
+thread_op_t thread_func(void *params) {
+   for (int id = *(int *)params; thread_queue_head[id] < thread_queue[id]; ) {
+      memcpy(thread_intents[id], thread_queue_head[id], (int_count_a + int_count_o) * sizeof *thread_intents[id]);
+      thread_queue_head[id] += (int_count_a + int_count_o) * sizeof *thread_intents[id];
+      generate_from_node(thread_intents[id], thread_intents[id] + int_count_a, *(int *)thread_queue_head[id], *(int *)(thread_queue_head[id] + IntSize), id);
+      thread_queue_head[id] += IntSize << 1;
    }
-#ifdef WINNT
-   return 0;
-#else
-   return NULL;
-#endif
+   return thread_nil;
 }
 
 void parallel_generate_from_node(unsigned long *intent, unsigned long *extent, int start_int, int start_bit, int rec_level, int id) {
-   int i, total;
    static int num = 0;
-   size_t supp = 0;
-   unsigned long *new_extent;
-   unsigned long *new_intent;
    if (rec_level == para_level) {
-      i = num % threads;
-      memcpy((unsigned long *)thread_queue[i], intent, BYTE_COUNT_A + BYTE_COUNT_O);
-      thread_queue[i] += BYTE_COUNT_A + BYTE_COUNT_O;
-      *(int *)thread_queue[i] = start_int;
-      thread_queue[i] += INT_SIZE;
-      *(int *)thread_queue[i] = start_bit;
-      thread_queue[i] += INT_SIZE;
+      int i = num % threads;
+      memcpy(thread_queue[i], intent, (int_count_a + int_count_o) * LongSize);
+      thread_queue[i] += (int_count_a + int_count_o) * LongSize;
+      *(int *)thread_queue[i] = start_int, thread_queue[i] += IntSize;
+      *(int *)thread_queue[i] = start_bit, thread_queue[i] += IntSize;
       counts[i].queue_length++;
       if (thread_queue[i] == thread_queue_limit[i]) {
-         total = thread_queue_limit[i] - thread_queue_head[i];
-         thread_queue_head[i] = (unsigned char *)realloc(thread_queue_head[i], total << 1);
+         int total = thread_queue_limit[i] - thread_queue_head[i];
+         thread_queue_head[i] = realloc(thread_queue_head[i], total << 1);
          thread_queue[i] = thread_queue_head[i] + total;
          thread_queue_limit[i] = thread_queue_head[i] + (total << 1);
       }
       num++;
       return;
    }
-   new_intent = extent + int_count_o;
-   new_extent = new_intent + int_count_a;
-   total = start_int * (ARCHBIT + 1) + (ARCHBIT - start_bit);
-   for (; start_int < int_count_a; start_int++) {
+   size_t supp = 0;
+   unsigned long *new_intent = extent + int_count_o, *new_extent = new_intent + int_count_a;
+   for (int total = (start_int + 1) * DATA_BITS - 1 - start_bit; start_int < int_count_a; start_int++) {
       for (; start_bit >= 0; start_bit--) {
-         if (total >= attributes)
-            goto out;
-         total++;
-         if ((intent[start_int] & (BIT << start_bit)) || (supps[start_int][start_bit] < min_support))
-            continue;
+         if (total++ >= attributes) goto out;
+         if ((intent[start_int] & (BitU << start_bit)) || supps[start_int][start_bit] < min_support) continue;
          compute_closure(new_intent, new_extent, extent, cols[start_int][start_bit], &supp);
          counts[id].closures++;
-         if ((new_intent[start_int] ^ intent[start_int]) & upto_bit[start_bit])
-            goto skip;
-         for (i = 0; i < start_int; i++)
-            if (new_intent[i] ^ intent[i])
-               goto skip;
-         if (supp < min_support)
-            goto skip;
+         if ((new_intent[start_int] ^ intent[start_int]) & upto_bit[start_bit]) goto skip;
+         for (int i = 0; i < start_int; i++)
+            if (new_intent[i] ^ intent[i]) goto skip;
+         if (supp < min_support) goto skip;
          counts[id].computed++;
          print_attributes(new_intent);
-         if (new_intent[int_count_a - 1] & BIT)
-            goto skip;
+         if (new_intent[int_count_a - 1] & BitU) goto skip;
          if (start_bit == 0)
-            parallel_generate_from_node(new_intent, new_extent, start_int + 1, ARCHBIT, rec_level + 1, id);
+            parallel_generate_from_node(new_intent, new_extent, start_int + 1, DATA_BITS - 1, rec_level + 1, id);
          else
             parallel_generate_from_node(new_intent, new_extent, start_int, start_bit - 1, rec_level + 1, id);
       skip:
          ;
       }
-      start_bit = ARCHBIT;
+      start_bit = DATA_BITS - 1;
    }
 out:
    if (rec_level == 0) {
@@ -435,126 +345,77 @@ out:
       initial_thr_stat = counts[0];
       counts[0].closures = 0;
       counts[0].computed = 0;
-      for (i = 1; i < threads; i++)
-         if (thread_queue_head[i] != thread_queue[i])
-#ifdef WINNT
-            thread_id[i] = (HANDLE)_beginthreadex(NULL, 0, thread_func, &thread_i[i], 0, NULL);
-#else
-            pthread_create(&thread_id[i], NULL, thread_func, &thread_i[i]);
-#endif
-
-      for (; thread_queue_head[id] < thread_queue[id];) {
-         memcpy(thread_intents[id], thread_queue_head[id], BYTE_COUNT_A + BYTE_COUNT_O);
-         thread_queue_head[id] += BYTE_COUNT_A + BYTE_COUNT_O;
-         generate_from_node(thread_intents[id], thread_intents[id] + int_count_a, *(int *)thread_queue_head[id], *(int *)(thread_queue_head[id] + INT_SIZE), id);
-         thread_queue_head[id] += INT_SIZE << 1;
+      for (int i = 1; i < threads; i++)
+         if (thread_queue_head[i] != thread_queue[i]) init_thread(thread_id[i], thread_func, &thread_i[i]);
+      for (; thread_queue_head[id] < thread_queue[id]; ) {
+         memcpy(thread_intents[id], thread_queue_head[id], (int_count_a + int_count_o) * sizeof *thread_intents[id]);
+         thread_queue_head[id] += (int_count_a + int_count_o) * sizeof *thread_intents[id];
+         generate_from_node(thread_intents[id], thread_intents[id] + int_count_a, *(int *)thread_queue_head[id], *(int *)(thread_queue_head[id] + IntSize), id);
+         thread_queue_head[id] += IntSize << 1;
       }
    }
-   return;
 }
 
 void find_all_intents(void) {
-   int i, queue_size, attrs;
-   if (para_level <= 0)
-      para_level = 1;
-   if (para_level > attributes)
-      para_level = attributes;
+   if (para_level <= 0) para_level = 1;
+   if (para_level > attributes) para_level = attributes;
    threads = cpus;
-   if (threads <= 0)
-      threads = 1;
-   if (verbosity_level >= 3)
-      fprintf(stderr, "INFO: running in %i threads\n", threads);
-   counts = (struct thread_stat *)calloc(threads, sizeof(struct thread_stat));
-   thread_id = (thread_id_t *)malloc(sizeof(thread_id_t) * threads);
-   memset(thread_id, 0, sizeof(thread_id_t) * threads);
-   thread_i = (int *)malloc(sizeof(int) * threads);
-   thread_queue = (unsigned char **)malloc(sizeof(unsigned char *) * threads);
-   thread_queue_head = (unsigned char **)malloc(sizeof(unsigned char *) * threads);
-   thread_queue_limit = (unsigned char **)malloc(sizeof(unsigned char *) * threads);
-   thread_intents = (unsigned long **)malloc(sizeof(unsigned long *) * threads);
-   queue_size = attributes;
-   queue_size = queue_size / threads + 1;
-   attrs = attributes - para_level + 1;
-   for (i = 0; i < threads; i++) {
+   if (threads <= 0) threads = 1;
+   if (verbosity_level >= 3) fprintf(stderr, "INFO: running in %i threads\n", threads);
+   counts = calloc(threads, sizeof *counts);
+   thread_id = calloc(threads, sizeof *thread_id);
+   thread_i = malloc(threads * sizeof *thread_i);
+   thread_queue = malloc(threads * sizeof *thread_queue);
+   thread_queue_head = malloc(threads * sizeof *thread_queue_head);
+   thread_queue_limit = malloc(threads * sizeof *thread_queue_limit);
+   thread_intents = malloc(threads * sizeof *thread_intents);
+   int queue_size = attributes / threads + 1, attrs = attributes - para_level + 1;
+   for (int i = 0; i < threads; i++) {
       thread_i[i] = i;
-      thread_queue_head[i] = thread_queue[i] = (unsigned char *)
-         malloc((BYTE_COUNT_A + BYTE_COUNT_O + (INT_SIZE << 1)) * queue_size);
-      thread_queue_limit[i] = thread_queue_head[i] + (BYTE_COUNT_A + BYTE_COUNT_O + (INT_SIZE << 1)) * queue_size;
-      thread_intents[i] = (unsigned long *)malloc((BYTE_COUNT_A + BYTE_COUNT_O) * attrs);
+      thread_queue_head[i] = thread_queue[i] = malloc(((int_count_a + int_count_o) * sizeof *thread_intents[i] + (IntSize << 1)) * queue_size);
+      thread_queue_limit[i] = thread_queue_head[i] + ((int_count_a + int_count_o) * sizeof *thread_intents[i] + (IntSize << 1)) * queue_size;
+      thread_intents[i] = malloc((int_count_a + int_count_o) * attrs * sizeof *thread_intents[i]);
    }
    compute_closure(thread_intents[0], thread_intents[0] + int_count_a, NULL, NULL, NULL);
-   counts[0].closures++;
-   counts[0].computed++;
+   counts[0].closures++, counts[0].computed++;
    print_attributes(thread_intents[0]);
-   if (thread_intents[0][int_count_a - 1] & BIT)
-      return;
-   parallel_generate_from_node(thread_intents[0], thread_intents[0] + int_count_a, 0, ARCHBIT, 0, 0);
+   if (thread_intents[0][int_count_a - 1] & BitU) return;
+   parallel_generate_from_node(thread_intents[0], thread_intents[0] + int_count_a, 0, DATA_BITS - 1, 0, 0);
    print_thread_info(1, counts[0]);
-   for (i = 1; i < threads; i++) {
-      if (thread_id[i]) {
-#ifdef WINNT
-         WaitForSingleObject(thread_id[i], INFINITE);
-         CloseHandle(thread_id[i]);
-#else
-         pthread_join(thread_id[i], NULL);
-#endif
-      }
+   for (int i = 1; i < threads; i++) {
+      if (thread_id[i] != 0) join_thread(thread_id[i]);
       print_thread_info(i + 1, counts[i]);
-      counts[0].computed += counts[i].computed;
-      counts[0].closures += counts[i].closures;
+      counts[0].closures += counts[i].closures, counts[0].computed += counts[i].computed;
    }
-   counts[0].computed += initial_thr_stat.computed;
-   counts[0].closures += initial_thr_stat.closures;
+   counts[0].closures += initial_thr_stat.closures, counts[0].computed += initial_thr_stat.computed;
    if (verbosity_level >= 3)
-      fprintf(stderr, "INFO: total %7i closures\n", counts[0].closures);
-   if (verbosity_level >= 3)
+      fprintf(stderr, "INFO: total %7i closures\n", counts[0].closures),
       fprintf(stderr, "INFO: total %7i concepts\n", counts[0].computed);
 }
 
 int main(int argc, char **argv) {
-   in_file = stdin;
-   out_file = stdout;
+   in_file = stdin, out_file = stdout;
    if (argc > 1) {
       int index = 1;
-      for (; (index < argc && argv[index][0] == '-' && argv[index][1] != 0); index++) {
-         switch (argv[index][1]) {
-            case 'S':
-               min_support = atoi(argv[index] + 2);
-               break;
-            case 'P':
-               cpus = atoi(argv[index] + 2);
-               break;
-            case 'L':
-               para_level = atoi(argv[index] + 2) - 1;
-               break;
-            case 'V':
-               verbosity_level = atoi(argv[index] + 2);
-               break;
-            default:
-               attr_offset = atoi(argv[index] + 1);
-         }
+      for (; index < argc && argv[index][0] == '-' && argv[index][1] != 0; index++) switch (argv[index][1]) {
+         case 'h': fprintf(stderr, "synopsis: %s [-h] [-index] [-Smin-support] [-Vlevel] [-Pcpus] [-Lpara_level] [INPUT-FILE] [OUTPUT-FILE]\n", argv[0]); return EXIT_SUCCESS;
+         case 'S': min_support = atoi(argv[index] + 2); break;
+         case 'P': cpus = atoi(argv[index] + 2); break;
+         case 'L': para_level = atoi(argv[index] + 2) - 1; break;
+         case 'V': verbosity_level = atoi(argv[index] + 2); break;
+         default: attr_offset = atoi(argv[index] + 1);
       }
-      if ((argc > index) && (argv[index][0] != '-'))
-         in_file = fopen(argv[index], "rb");
-      if ((argc > index + 1) && (argv[index + 1][0] != '-'))
-         out_file = fopen(argv[index + 1], "wb");
+      if (argc > index && argv[index][0] != '-') in_file = fopen(argv[index], "rb");
+      if (argc > index + 1 && argv[index + 1][0] != '-') out_file = fopen(argv[index + 1], "wb");
    }
-   if (!in_file) {
-      fprintf(stderr, "%s: cannot open input data stream\n", argv[0]);
-      return 1;
-   }
-   if (!out_file) {
-      fprintf(stderr, "%s: open output data stream\n", argv[0]);
-      return 2;
-   }
-#ifdef WINNT
-   output_lock = CreateMutex(NULL, FALSE, NULL);
-#endif
+   if (in_file == NULL) { fprintf(stderr, "%s: cannot open input data stream\n", argv[0]); return EXIT_FAILURE; }
+   if (out_file == NULL) { fprintf(stderr, "%s: open output data stream\n", argv[0]); return EXIT_FAILURE; }
+   init_mutex(output_lock);
    read_context(in_file);
    fclose(in_file);
    print_context_info();
    initialize_algorithm();
    find_all_intents();
    fclose(out_file);
-   return 0;
+   return EXIT_SUCCESS;
 }
