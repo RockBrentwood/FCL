@@ -30,6 +30,9 @@ DESCRIPTION
               data  set  uses  attributes  numbered from 1, you should use the
               `-1' switch, and so on.
 
+       -h,
+              display the command-line syntax and return.
+
        -Smin-support,
               the minimal  support  considered  is  set  to  min-support.  The
               default  value is 0, meaning that the support is disregarded and

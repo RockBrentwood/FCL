@@ -1,199 +1,111 @@
-<html><head>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
 <meta http-equiv="content-type" content="text/html; charset=windows-1252">
-    <title>FCALGS: Input Data Formats</title>
-    <link rel="stylesheet" href="Files/Steely.css" type="text/css">
-    <style type="text/css">
-      a:link, a:hover, a:visited { color: rgb(230,120,0); }
-      h3 { font-weight: normal; }
-      #footer { text-align: right; margin-top: 42px; }
-      #footer a { color: black; font-weight: normal; }
-      em { font-weight: normal; font-style: italic; }
-      strong { font-style: normal; }
-      #download { text-align: center; }
-      td { padding: 0em; width: 1.5em; text-align: center; border-left: solid 1px; border-bottom: solid 1px; }
-      tr:first-child > td { border-top: solid 1px; }
-      td:last-child { border-right: solid 1px; }
-      pre { margin: 0em; padding: 0em; line-height: 1.3em; }
-      .context { display: table; margin-top: 1em; }
-      div.context > div:first-child { display: table-cell; width: 12em; }
-      div.context > div:last-child { display: table-cell; margin: 0px; padding-left: 0em; }
-    </style>
-  </head>
-  <body>
-    <h1>FCALGS: Data Formats</h1>
-    <p>
-      This document describes basic input and output data formats that are used
-      by <a href="http://fcalgs.sourceforge.net/">FCALGS</a>.
-    </p>
-    <a name="IDFC"></a>
-    <h2>Input Data (Formal Context)</h2>
-    <p>
-      A formal context is a triplet
-      &#10216;<em>X</em>,<em>Y</em>,<em>I</em>&#10217;
-      such that <em>X</em> is a finite nonempty set of objects (transactions),
-      <em>Y</em> is a finite nonempty set of attributes (features),
-      and <em>I</em>&#8838;<em>X</em>×<em>Y</em>, i.e.,
-      <em>I</em> is a binary relation between objects from <em>X</em>
-      and attributes from <em>Y</em>.
-      The fact &#10216;<em>x</em>,<em>y</em>&#10217;&#8712;<em>I</em> is
-      interpreted so that
-      “object <em>x</em> has attribute <em>y</em>.”
-      Obviously, &#10216;<em>X</em>,<em>Y</em>,<em>I</em>&#10217; corresponds
-      to a two-dimensional data table with rows corresponding to objects
-      from <em>X</em>, columns corresponding to attributes from <em>Y</em>,
-      and table entries being either crosses or blanks, indicating whether
-      an object does have or does not have an attribute, respectively.
-    </p>
-    <p>
-      We accept the following conventions. The sets of objects and attributes
-      contain consecutive integers starting by zero, i.e., we can write
-      <em>X</em>={0,…,<em>m</em>} and <em>Y</em>={0,…,<em>n</em>}.
-      Furthermore, we assume that each object has at least one attribute
-      (i.e., there is no “blank line” in the corresponding data
-      table).
-    </p>
-    <p>
-      An input file corresponding to
-      &#10216;<em>X</em>,<em>Y</em>,<em>I</em>&#10217; is an ASCII text file
-      which consists of lines representing attributes of objects
-      from <em>X</em>. A line is ignored if it consists solely of white
-      space (spaces and tabs). Otherwise, a line encodes
-      a list of attributes. A <em>list of attributes</em> is
-      a white-space separated sequence of nonnegative integers which are
-      present in the ascending order.
-      The integers can take values 0,…,<em>n</em> and each of them
-      denotes the corresponding attribute.
-      For each object <em>x</em>&#8712;<em>X</em>, the input file contains
-      exactly one line which is a list of all its attributes.
-      Moreover, the (lists of attributes of) objects in the file
-      are present in the ascending order.
-      That is, the first (nonempty) line in the file is a list of attributes
-      of object 0, the second (nonempty) line
-      in the file is a list of attributes of object 1,…, the last
-      (nonempty) line in the file is a list of attributes of object <em>m</em>.
-    </p>
-    <p>
-      The following examples show formal contexts (as data tables) on the left
-      and the corresponding input files on the right.
-    </p>
-    <div class="context">
-      <div>
-	<table cellspacing="0">
-	  <tbody><tr><td>×</td><td>&nbsp;</td><td>×</td><td>&nbsp;</td><td>×</td></tr>
-	  <tr><td>&nbsp;</td><td>&nbsp;</td><td>×</td><td>×</td><td>×</td></tr>
-	  <tr><td>×</td><td>×</td><td>&nbsp;</td><td>&nbsp;</td><td>×</td></tr>
-	  <tr><td>×</td><td>&nbsp;</td><td>×</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-	  <tr><td>×</td><td>×</td><td>&nbsp;</td><td>×</td><td>&nbsp;</td></tr>
-	</tbody></table>
-      </div>
-      <div>
-	<pre>0 2 4
+<title>FCALGS: Input Data Formats</title>
+<link rel=stylesheet href="Files/Steely.css" type="text/css">
+<style type="text/css">
+a:link, a:hover, a:visited { color: rgb(230,120,0); }
+h3 { font-weight: normal; }
+#footer { text-align: right; margin-top: 42px; }
+#footer a { color: black; font-weight: normal; }
+em { font-weight: normal; font-style: italic; }
+strong { font-style: normal; }
+#download { text-align: center; }
+td { padding: 0em; width: 1.5em; text-align: center; border-left: solid 1px; border-bottom: solid 1px; }
+tr:first-child > td { border-top: solid 1px; }
+td:last-child { border-right: solid 1px; }
+pre { margin: 0em; padding: 0em; line-height: 1.3em; }
+.context { display: table; margin-top: 1em; }
+div.context > div:first-child { display: table-cell; width: 12em; }
+div.context > div:last-child { display: table-cell; margin: 0px; padding-left: 0em; }
+</style>
+</head>
+<body>
+<h1>FCALGS: Data Formats</h1>
+<p>This document describes basic input and output data formats that are used by <a href="http://fcalgs.sourceforge.net/">FCALGS</a>.</p>
+<a name=IDFC></a>
+<h2>Input Data (Formal Context)</h2>
+<p>A formal context &#10216;<em>X</em>,<em>Y</em>,<em>I</em>&#10217; consists of a set <em>X</em> of objects (transactions), a set <em>Y</em> of attributes (features) and a context <em>I</em>&#8838;<em>X</em>×<em>Y</em>, that defines a binary relation between objects from <em>X</em> and attributes from <em>Y</em> in which &#10216;<em>x</em>,<em>y</em>&#10217;&#8712;<em>I</em> is interpreted that &ldquo;object <em>x</em> has attribute <em>y</em>&rdquo;. All sets are assumed to be finite and non-empty. The context is depicted as a table with one row labelled by <em>X</em> for each object, one column labelled by <em>Y</em> for each attribute, in which the entry at row <em>x</em> column <em>y</em> is a cross if object <em>x</em> has attribute <em>y</em>, or by a space if not.</p>
+<p>The respective sets may be labelled by integers, starting from 0; i.e. <em>X</em>={0,…,<em>m</em>} and <em>Y</em>={0,…,<em>n</em>}. We assume every object has at least one attribute (i.e., no &ldquo;blank rows&rdquo; in the table).</p>
+<p>The data &#10216;<em>X</em>,<em>Y</em>,<em>I</em>&#10217; is an ASCII text file which consists of lines, one for each object in <em>X</em>, in which its attributes are listed. Empty lines (white space only, i.e. spaces and tabs) are ignored. Otherwise, the line contains the object's <em>list of attributes</em>, as a white-space separated sequence of nonnegative integers in ascending order; the values ranging over 0,…,<em>n</em> denoting the corresponding attribute. The objects are listed in order: the first line for object 0, the second for object 1, and so on, up to line <em>m</em> + 1 for object <em>m</em>.</p>
+<p>The following examples show side-by-side the table for a formal context (on the left) and a corresponding input file (in the right).</p>
+<div class=context>
+<div><table cellspacing=0><tbody>
+<tr><td>×</td><td>&nbsp;</td><td>×</td><td>&nbsp;</td><td>×</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>×</td><td>×</td><td>×</td></tr>
+<tr><td>×</td><td>×</td><td>&nbsp;</td><td>&nbsp;</td><td>×</td></tr>
+<tr><td>×</td><td>&nbsp;</td><td>×</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>×</td><td>×</td><td>&nbsp;</td><td>×</td><td>&nbsp;</td></tr>
+</tbody></table></div>
+<div><pre>0 2 4
 2 3 4
 0 1 4
 0 2
-0 1 3</pre>
-      </div>
-    </div>
-    <div class="context">
-      <div>
-	<table cellspacing="0">
-	  <tbody><tr><td>×</td><td>×</td><td>×</td><td>×</td><td>×</td></tr>
-	  <tr><td>&nbsp;</td><td>×</td><td>×</td><td>×</td><td>×</td></tr>
-	  <tr><td>&nbsp;</td><td>&nbsp;</td><td>×</td><td>×</td><td>×</td></tr>
-	  <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>×</td><td>×</td></tr>
-	  <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>×</td></tr>
-	</tbody></table>
-      </div>
-      <div>
-	<pre>0 1 2 3 4
+0 1 3</pre></div>
+</div>
+<div class=context>
+<div><table cellspacing=0><tbody>
+<tr><td>×</td><td>×</td><td>×</td><td>×</td><td>×</td></tr>
+<tr><td>&nbsp;</td><td>×</td><td>×</td><td>×</td><td>×</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>×</td><td>×</td><td>×</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>×</td><td>×</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>×</td></tr>
+</tbody></table></div>
+<div><pre>0 1 2 3 4
 1 2 3 4
 2 3 4
 3 4
-4</pre>
-      </div>
-    </div>
-    <div class="context">
-      <div>
-	<table cellspacing="0">
-	  <tbody><tr><td>×</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-	  <tr><td>&nbsp;</td><td>×</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-	  <tr><td>&nbsp;</td><td>&nbsp;</td><td>×</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-	  <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>×</td><td>&nbsp;</td></tr>
-	  <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>×</td></tr>
-	</tbody></table>
-      </div>
-      <div>
-	<pre>0
+4</pre></div>
+</div>
+<div class=context>
+<div><table cellspacing=0><tbody>
+<tr><td>×</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td>×</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>×</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>×</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>×</td></tr>
+</tbody></table></div>
+<div><pre>0
 1
 2
 3
-4</pre>
-      </div>
-    </div>
-    <div class="context">
-      <div>
-	<table cellspacing="0">
-	  <tbody><tr><td>&nbsp;</td><td>×</td><td>×</td><td>×</td><td>×</td></tr>
-	  <tr><td>×</td><td>&nbsp;</td><td>×</td><td>×</td><td>×</td></tr>
-	  <tr><td>×</td><td>×</td><td>&nbsp;</td><td>×</td><td>×</td></tr>
-	  <tr><td>×</td><td>×</td><td>×</td><td>&nbsp;</td><td>×</td></tr>
-	  <tr><td>×</td><td>×</td><td>×</td><td>×</td><td>&nbsp;</td></tr>
-	</tbody></table>
-      </div>
-      <div>
-	<pre>1 2 3 4
+4</pre></div>
+</div>
+<div class=context>
+<div><table cellspacing=0><tbody>
+<tr><td>&nbsp;</td><td>×</td><td>×</td><td>×</td><td>×</td></tr>
+<tr><td>×</td><td>&nbsp;</td><td>×</td><td>×</td><td>×</td></tr>
+<tr><td>×</td><td>×</td><td>&nbsp;</td><td>×</td><td>×</td></tr>
+<tr><td>×</td><td>×</td><td>×</td><td>&nbsp;</td><td>×</td></tr>
+<tr><td>×</td><td>×</td><td>×</td><td>×</td><td>&nbsp;</td></tr>
+</tbody></table></div>
+<div><pre>1 2 3 4
 0 2 3 4
 0 1 3 4
 0 1 2 4
-0 1 2 3</pre>
-      </div>
-    </div>
-    <p>
-      Note that the amount of the white space on each line is not important.
-      That is, the integers denoting attributes should be separated by a single
-      white-space character or more white-space characters. This allows to
-      write the input data in a more readable way (if it is convenient).
-      For instance, the first context from the previous example can be
-      equivalently specified as follows:
-    </p>
-    <div class="context">
-      <div>
-	<table cellspacing="0">
-	  <tbody><tr><td>×</td><td>&nbsp;</td><td>×</td><td>&nbsp;</td><td>×</td></tr>
-	  <tr><td>&nbsp;</td><td>&nbsp;</td><td>×</td><td>×</td><td>×</td></tr>
-	  <tr><td>×</td><td>×</td><td>&nbsp;</td><td>&nbsp;</td><td>×</td></tr>
-	  <tr><td>×</td><td>&nbsp;</td><td>×</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-	  <tr><td>×</td><td>×</td><td>&nbsp;</td><td>×</td><td>&nbsp;</td></tr>
-	</tbody></table>
-      </div>
-      <div>
-	<pre>0   2   4
+0 1 2 3</pre></div>
+</div>
+<p>The layout with white space in the input file is for legibility but is not important to the program: one or more white-space characters may separate attributes. For instance, the first context from the previous example can be equivalently specified as follows:</p>
+<div class=context>
+<div><table cellspacing=0><tbody>
+<tr><td>×</td><td>&nbsp;</td><td>×</td><td>&nbsp;</td><td>×</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>×</td><td>×</td><td>×</td></tr>
+<tr><td>×</td><td>×</td><td>&nbsp;</td><td>&nbsp;</td><td>×</td></tr>
+<tr><td>×</td><td>&nbsp;</td><td>×</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>×</td><td>×</td><td>&nbsp;</td><td>×</td><td>&nbsp;</td></tr>
+</tbody></table></div>
+<div><pre>0   2   4
     2 3 4
 0 1     4
 0   2
-0 1   3</pre>
-      </div>
-    </div>
-    <p>
-      Given an input file of the previous form, the number of all objects is
-      determined as the number of all nonempty lines in the file and the number
-      of all attributes is determined from the index of the greatest integer
-      present in the file.
-    </p>
-    <h2>Output Data (List of Concept Intents)</h2>
-    <p>
-      The basic output of the formal concept analysis is a list of formal
-      concepts. Since each formal concept is uniquely given by its extent
-      and/or intent, our tools produce a list of all concept intents. Each
-      concept intent is encoded as a <em>list of attributes</em>,
-      see <a href="#IDFC">Input Data (Formal Context)</a> for explanation.
-    </p>
-
-    <p id="footer">
-      © 2009 <a href="http://vychodil.inf.upol.cz/">Vilem Vychodil</a>, <a href="mailto:vilem.vychodil@upol.cz">vilem.vychodil@upol.cz</a>;
-      hosted by
-      <a href="http://sourceforge.net/projects/fcalgs"><img src="Files/sflogo.png" alt="Get fcalgs at SourceForge.net. Fast, secure and Free Open Source software downloads" width="80" height="15" border="0"></a>
-    </p>
-
-
-</body></html>
+0 1   3</pre></div>
+</div>
+<p>For a given input file the number <em>m</em> + 1 of objects is the line count, while the upper <em>n</em> for attributes is taken as the maximum of all the attribute indexes listed. It is possible for the software to treat factorable table separately component-wise (that is: a table that can be arranged in block diagonal form), but this feature has not been incorporated into the software. So, it is possible to overwhelm the atttribute roster by using needlessly large numbers.</p>
+<h2>Output Data (List of Concept Intents)</h2>
+<p>The basic output of the formal concept analysis is a list of formal concepts. Since each formal concept is uniquely given by its extent and/or intent, our tools produce a list of all concept intents. Each concept intent is encoded as a <em>list of attributes</em>, see <a href=#IDFC>Input Data (Formal Context)</a> for explanation.</p>
+<p id=footer>
+&copy;2009 <a href="http://vychodil.inf.upol.cz/">Vilem Vychodil</a>, <a href="mailto:vilem.vychodil@upol.cz">vilem.vychodil@upol.cz</a>; hosted by <a href="http://sourceforge.net/projects/fcalgs"><img src="Files/sflogo.png" alt="Get fcalgs at SourceForge.net. Fast, secure and Free Open Source software downloads" width=80 height=15 border=0></a>
+</p>
+</body>
+</html>

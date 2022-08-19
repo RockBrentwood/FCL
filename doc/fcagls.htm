@@ -1,132 +1,72 @@
-<html><head>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
 <meta http-equiv="content-type" content="text/html; charset=windows-1252">
-    <title>FCALGS: Algorithms for Formal Concept Analysis</title>
-    <link rel="stylesheet" href="Files/Steely.css" type="text/css">
-    <style type="text/css">
-      a:link, a:hover, a:visited { color: rgb(230,120,0); }
-      h3 { font-weight: normal; }
-      #footer { text-align: right; margin-top: 42px; }
-      #footer a { color: black; font-weight: normal; }
-      em { font-weight: normal; font-style: italic; }
-      strong { font-style: normal; }
-      #download { text-align: center; }
-      table { margin: 1em auto 1em auto; }
-      td { padding: .4em; border-left: solid 1px; border-bottom: solid 1px; }
-      tr:first-child > td { border-top: solid 1px; font-style: italic; }
-      td:last-child { border-right: solid 1px; }
-    </style>
-  </head>
-  <body>
-    <h1>FCALGS</h1>
-    <p><a href="http://fcalgs.sourceforge.net/">FCALGS</a>
-      is a collection of standalone tools implementing algorithms
-      for Formal Concept Analysis (FCA) – a method of qualitative data
-      analysis founded by Rudolf Wille (TU Darmstadt) in mid 80s. Our intention
-      is to implement high-performance command-line tools for computing formal
-      concepts, (frequent) itemsets, nonredundant bases, boolean matrix
-      decompositions, and solving other problems related to the FCA.</p>
-    <h2>Download</h2>
-    <p>All packages come with sources and static precompiled binaries for
-      GNU/Linux and Microsoft Windows operating systems. Supported and tested hardware
-      platforms include i686, x86_64, and sparc64. Each program is
-      individually packaged and documented.</p>
-    <div id="download">
-      <table cellspacing="0">
-	<tbody>
-	  <tr>
-	    <td>Package</td>
-	    <td>Release</td>
-	    <td>Date</td>
-	    <td>Implementation</td>
-	    <td>Download</td>
-	    <td>Documentation</td>
-	  </tr>
-	  <tr>
-	    <td>IterEss</td>
-	    <td>ins</td>
-	    <td>2017/11/29</td>
-	    <td>serial, bitarrays</td>
-	    <td><a href="http://sourceforge.net/projects/fcalgs/files/iteress/ins/iteress-ins.zip/download">iteress-ins.zip</a></td>
-	    <td><!--<a href="iteress-ins.html">iteress-ins.html</a>--></td>
-	  </tr>
-	  <tr>
-	    <td>FCbO</td>
-	    <td>ins</td>
-	    <td>2010/10/05</td>
-	    <td>serial, bitarrays</td>
-	    <td><a href="http://sourceforge.net/projects/fcalgs/files/fcbo/ins/fcbo-ins.zip/download">fcbo-ins.zip</a></td>
-	    <td><a href="http://fcalgs.sourceforge.net/fcbo-ins.html">fcbo-ins.html</a></td>
-	  </tr>
-	  <tr>
-	    <td>PCbO</td>
-	    <td>amai</td>
-	    <td>2009/03/03</td>
-	    <td>parallel, bitarrays</td>
-	    <td><a href="http://sourceforge.net/projects/fcalgs/files/pcbo/amai/pcbo-amai.zip/download">pcbo-amai.zip</a></td>
-	    <td><a href="http://fcalgs.sourceforge.net/pcbo-amai.html">pcbo-amai.html</a></td>
-	  </tr>
-	</tbody>
-      </table>
-    </div>
-    <p>
-      All tools in FCALGS use a common set of
-      <a href="http://fcalgs.sourceforge.net/format.html">input/output data formats</a>.
-    </p>
-    <h2>License and Resources</h2>
-    <p>
-      The tools are distributed under the terms of
-      <a href="http://www.gnu.org/licenses/gpl-2.0.html">GNU General Public License Version 2</a>.
-    </p>
-    <p>
-      Users in academia are kindly asked to cite the following resources if the
-      software is used to pursue any research activities which may result in
-      publications:
-    </p>
-    <ol>
-      <li>
-      Outrata J., Vychodil V.: Fast Algorithm for Computing Fixpoints of
-      Galois Connections Induced by Object-Attribute Relational
-      Data.<br>
-      <em>Information Sciences</em> <strong>185</strong>(1)(2012), pp.
-      114–127.<br>
-      <a href="http://dx.doi.org/10.1016/j.ins.2011.09.023">DOI
-      10.1016/j.ins.2011.09.023</a>, ISSN 0020–0255
-      </li>
-      <li>
-      Krajca P., Outrata J., Vychodil V.: Advances in algorithms based
-      on CbO.<br>
-      In: Kryszkiewicz M., Obiedkov S. (Eds.): <em>Proc. CLA 2010</em>, pp.
-      325–337.<br>
-      <a href="http://ceur-ws.org/Vol-672/">CEUR WS, Vol. 672</a>, ISBN
-      978–84614–4027–6
-      </li>
-      <li>
-      Krajca P., Outrata J., Vychodil V.: Parallel Algorithm for
-      Computing Fixpoints of Galois Connections.<br>
-      <em>Annals of Mathematics and Artificial Intelligence</em>
-      <strong>59</strong>(2)(2010), pp. 257–272.<br>
-      <a href="http://dx.doi.org/10.1007/s10472-010-9199-5">DOI
-      10.1007/s10472–010–9199–5</a>, ISSN
-      1012–2443 (paper), 1573–7470 (online)
-      </li>
-      <li>
-      Krajca P., Outrata J., Vychodil V.: Parallel Recursive Algorithm for
-      FCA.<br>
-      In: Belohlavek R., Kuznetsov S. O. (Eds.): <em>Proc. CLA 2008</em>,
-      pp. 71–82.<br>
-      <a href="http://ceur-ws.org/Vol-433/">CEUR WS, Vol. 433</a>, ISBN
-      978–80–244–2111–7
-      </li>
-    </ol>
-    <p id="footer">
-    © 2009 <a href="http://vychodil.inf.upol.cz/">Vilem
-    Vychodil</a>, <a href="mailto:vilem.vychodil@upol.cz">vilem.vychodil@upol.cz</a>,
-          2017 <a href="http://outrata.inf.upol.cz/">Jan Outrata</a>, <a href="mailto:jan.outrata@upol.cz">jan.outrata@upol.cz</a>;
-	        hosted by
-		            <a href="http://sourceforge.net/projects/fcalgs"><img src="Files/sflogo.png" alt="Get
-fcalgs at SourceForge.net.
-Fast, secure and Free Open Source software downloads" width="80" height="15" border="0"></a>
-    </p>
-
-
-</body></html>
+<title>FCALGS: Algorithms for Formal Concept Analysis</title>
+<link rel=stylesheet href="Files/Steely.css" type="text/css">
+<style type="text/css">
+a:link, a:hover, a:visited { color: rgb(230,120,0); }
+h3 { font-weight: normal; }
+#footer { text-align: right; margin-top: 42px; }
+#footer a { color: black; font-weight: normal; }
+em { font-weight: normal; font-style: italic; }
+strong { font-style: normal; }
+#download { text-align: center; }
+table { margin: 1em auto 1em auto; }
+td { padding: .4em; border-left: solid 1px; border-bottom: solid 1px; }
+tr:first-child > td { border-top: solid 1px; font-style: italic; }
+td:last-child { border-right: solid 1px; }
+pre { margin: 0em; padding: 0em; line-height: 1.3em; }
+.context { display: table; margin-top: 1em; }
+div.context > div:first-child { display: table-cell; width: 12em; }
+div.context > div:last-child { display: table-cell; margin: 0px; padding-left: 0em; }
+</style>
+</head>
+<body>
+<h1>FCALGS</h1>
+<p><a href="http://fcalgs.sourceforge.net/">FCALGS</a> is a collection of standalone tools implementing algorithms for Formal Concept Analysis (FCA) &mdash; a method of qualitative data analysis founded by Rudolf Wille (TU Darmstadt) in mid 80s. Our intention is to implement high-performance command-line tools for computing formal concepts, (frequent) itemsets, nonredundant bases, boolean matrix decompositions, and solving other problems related to the FCA.</p>
+<h2>Source Code (&amp; Download)</h2>
+<p>All packages come with sources and static precompiled binaries for GNU/Linux and Microsoft Windows operating systems. Supported and tested hardware platforms include i686, x86_64, and sparc64. Each program is individually packaged and documented.</p>
+<div id=download><table cellspacing=0><tbody><tr>
+<td>Package</td><td>Release</td><td>Date</td><td>Implementation</td><td>Source (Download)</td><td>Documentation</td>
+</tr><tr>
+<td>IterEss</td><td>ins</td><td>2017-11-29</td><td>serial, bitarrays</td>
+<td><a href="../iteress.c">iteress.c</a> (Original: <a href="http://sourceforge.net/projects/fcalgs/files/iteress/ins/iteress-ins.zip/download">iteress-ins.zip</a>)</td>
+<td><!--<a href="iteress-ins.html">iteress-ins.html</a>--></td>
+</tr><tr>
+<td>FCbO</td><td>ins</td><td>2010-10-05</td><td>serial, bitarrays</td>
+<td><a href="../fcbo.c">fcbo.c</a> (Original: <a href="http://sourceforge.net/projects/fcalgs/files/fcbo/ins/fcbo-ins.zip/download">fcbo-ins.zip</a>)</td>
+<td><a href="fcbo.htm">fcbo.htm</a> (Original: <a href="http://fcalgs.sourceforge.net/fcbo-ins.html">fcbo-ins.html</a>)</td>
+</tr><tr>
+<td>PCbO</td><td>amai</td><td>2009-03-03</td><td>parallel, bitarrays</td>
+<td><a href="../pcbo.c">pcbo.c</a> (Original: <a href="http://sourceforge.net/projects/fcalgs/files/pcbo/amai/pcbo-amai.zip/download">pcbo-amai.zip</a>)</td>
+<td><a href="pcbo.htm">pcbo.htm</a> (Original: <a href="http://fcalgs.sourceforge.net/pcbo-amai.html">pcbo-amai.html</a>)</td>
+</tr></tbody></table></div>
+<p>All tools in FCALGS use a common set of <a href="format.htm">input/output data formats</a>.</p>
+<h2>License and Resources</h2>
+<p>The tools are distributed under the terms of <a href="http://www.gnu.org/licenses/gpl-2.0.html">GNU General Public License Version 2</a>.</p>
+<p>Users in academia are kindly asked to cite the following resources if the software is used to pursue any research activities which may result in publications:</p>
+<ol><li>
+Outrata J., Vychodil V.: Fast Algorithm for Computing Fixpoints of Galois Connections Induced by Object-Attribute Relational Data.<br/>
+<em>Information Sciences</em> <strong>185</strong>(1)(2012), pp. 114&mdash;127.<br/>
+<a href="http://dx.doi.org/10.1016/j.ins.2011.09.023">DOI 10.1016/j.ins.2011.09.023</a>, ISSN 0020&mdash;0255
+</li><li>
+Krajca P., Outrata J., Vychodil V.: Advances in algorithms based on CbO.<br/>
+In: Kryszkiewicz M., Obiedkov S. (Eds.): <em>Proc. CLA 2010</em>, pp. 325&mdash;337.<br/>
+<a href="http://ceur-ws.org/Vol-672/">CEUR WS, Vol. 672</a>, ISBN 978&mdash;84614&mdash;4027&mdash;6
+</li><li>
+Krajca P., Outrata J., Vychodil V.: Parallel Algorithm for Computing Fixpoints of Galois Connections.<br/>
+<em>Annals of Mathematics and Artificial Intelligence</em> <strong>59</strong>(2)(2010), pp. 257&mdash;272.<br/>
+<a href="http://dx.doi.org/10.1007/s10472-010-9199-5">DOI 10.1007/s10472&mdash;010&mdash;9199&mdash;5</a>, ISSN 1012&mdash;2443 (paper), 1573&mdash;7470 (online)
+</li><li>
+Krajca P., Outrata J., Vychodil V.: Parallel Recursive Algorithm for FCA.<br/>
+In: Belohlavek R., Kuznetsov S. O. (Eds.): <em>Proc. CLA 2008</em>, pp. 71&mdash;82.<br/>
+<a href="http://ceur-ws.org/Vol-433/">CEUR WS, Vol. 433</a>, ISBN 978&mdash;80&mdash;244&mdash;2111&mdash;7
+</li></ol>
+<p id=footer>
+&copy;2009 <a href="http://vychodil.inf.upol.cz/">Vilem Vychodil</a>, <a href="mailto:vilem.vychodil@upol.cz">vilem.vychodil@upol.cz</a>,
+&copy;2017 <a href="http://outrata.inf.upol.cz/">Jan Outrata</a>, <a href="mailto:jan.outrata@upol.cz">jan.outrata@upol.cz</a>;
+hosted by <a href="http://sourceforge.net/projects/fcalgs"><img src="Files/sflogo.png" alt="Get fcalgs at SourceForge.net. Fast, secure and Free Open Source software downloads" width=80 height=15 border=0></a>
+</p>
+</body>
+</html>
