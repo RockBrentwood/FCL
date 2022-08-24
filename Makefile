@@ -82,11 +82,14 @@ pcbo-static: %-static: %.c
 test: $(APPS)
 	sh test.sh
 
+test-debug: $(addsuffix -debug,$(APPS))
+	sh test.sh -debug
+
 clean:
 	rm -f Log
 	rm -f *.ex
 
 clobber: clean
 	rm -f $(APPS)$X
-	rm -f $(APPS)-debug$X
-	rm -f $(APPS)-static*$X
+	rm -f $(addsuffix -debug$X,$(APPS))
+	rm -f $(addsuffix -static-$(PLATFORM)-$(ARCH)$X,$(APPS))

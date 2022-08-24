@@ -1,9 +1,11 @@
+Mode=$1
+
 Compare() {
    App=$1; Test=$2; File=${App}${Test}.ex
-   ./${App} <test/fcl${Test}.in >${File}
+   ./${App}${Mode} <test/fcl${Test}.in > ${File}
    if ! cmp -s ${File} test/${File}; then
       echo diff -d ${File} test/${File} >> Log
-      diff -d ${File} test/${File} >>Log
+      diff -d ${File} test/${File} >> Log
    else
       rm ${File}
    fi
