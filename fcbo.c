@@ -4,19 +4,15 @@
 // Jan Outrata, <jan.outrata@upol.cz>
 // Vilem Vychodil, <vilem.vychodil@upol.cz>
 //
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License version 2 as
-// published by the Free Software Foundation.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License version 2 as published by the Free Software Foundation.
 //
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+// without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-
+// You should have received a copy of the GNU General Public License along with this program;
+// if not, write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -24,313 +20,271 @@
 #include <ctype.h>
 #include <sys/time.h>
 
-const unsigned long BitU = 1UL, NilU = 0UL;
-#define DATA_BITS	(8 * sizeof(unsigned long))
-const size_t BufferBlock = 0x400;
+#define BitU(D)	(1UL << (D))
+const unsigned long NilU = 0UL;
+#define DataN	(8*sizeof(unsigned long))
 
-int attributes = 0;
-int objects = 0;
-int int_count_a = 0;
-int int_count_o = 0;
-int table_entries = 0;
-int min_support = 0;
-unsigned long *context;
-unsigned long **cols;
-int *supps;
-int *attrib_numbers;
-unsigned long upto_bit[DATA_BITS];
-int attr_offset = 0;
-FILE *in_file, *out_file;
+int Atrs = 0, AtrN = 0;
+int Objs = 0, ObjN = 0;
+int Entries = 0;
+int LoSup = 0;
+unsigned long *Context, **AtrTab;
+int *SupTab, *AtrNum;
+unsigned long UpToBit[DataN];
+int Atr0 = 0;
+FILE *InF, *ExF;
 
-int verbosity_level = 1;
-struct stats_t {
-   int total;
-   int closures;
-   int fail_canon;
-   int fail_fcbo;
-   int fail_support;
-} stats = { 0, 0, 0, 0, 0 };
+int Noise = 1;
 
-struct timeval time_start, time_inner, time_end;
-int *buff = NULL;
-int buff_index = 0;
-size_t buff_size = BufferBlock;
+// Performance statistics.
+int CurTotal = 0, CurClosures = 0;
+int BadCanon = 0, BadFcbo = 0, BadSupport = 0;
 
-bool get_next_integer(FILE *file, int *value) {
-   *value = -1;
-   int ch = ' ';
-   while (ch != EOF && !isdigit(ch)) {
-      ch = fgetc(file);
-      if (ch == '\n') return true;
-   }
-   if (ch == EOF) return false;
-   *value = 0;
-   while (isdigit(ch)) {
-      *value *= 10;
-      *value += ch - '0';
-      ch = fgetc(file);
-   }
-   ungetc(ch, file);
-   *value -= attr_offset;
+struct timeval BegTime, CurTime, EndTime;
+
+bool GetNumber(FILE *InF, int *ValueP) {
+   *ValueP = -1;
+   int Ch = fgetc(InF);
+   for (; !isdigit(Ch); Ch = fgetc(InF))
+      if (Ch == EOF) return false;
+      else if (Ch == '\n') return true;
+   for (*ValueP = 0; isdigit(Ch); Ch = fgetc(InF)) *ValueP = 10*(*ValueP) + Ch - '0';
+   ungetc(Ch, InF);
+   *ValueP -= Atr0;
+   if (*ValueP < 0) fprintf(stderr, "Invalid input value: %i (minimum value is %i), quitting.\n", *ValueP + Atr0, Atr0), exit(EXIT_FAILURE);
    return true;
 }
 
-void allocate_buffer(int **buffer, int size) {
-   *buffer = *buffer == NULL ? malloc(size * sizeof *buffer) : realloc(*buffer, size * sizeof *buffer);
-   if (*buffer == NULL) fprintf(stderr, "Cannot reallocate buffer, quitting."), exit(EXIT_FAILURE);
+int *GrowBuffer(int *Buf, size_t N) {
+   bool WasEmpty = Buf == NULL;
+   Buf = WasEmpty? malloc(N*sizeof *Buf): realloc(Buf, N*sizeof *Buf);
+   if (Buf == NULL) fprintf(stderr, "Cannot %s the input buffer, quitting.\n", WasEmpty? "allocate": "reallocate"), exit(EXIT_FAILURE);
+   return Buf;
 }
 
-#define PUSH_NEW_INTEGER(__value) { \
-   if (buff_index >= buff_size) allocate_buffer(&buff, buff_size += BufferBlock); \
-   buff[buff_index++] = (__value); \
-}
-
-void read_file(FILE *file) {
-   allocate_buffer(&buff, buff_size);
-   int last_value = -1, last_attribute = -1, last_object = -1;
-   for (int value = 0; get_next_integer(file, &value); )
-      if (value >= 0 || last_value >= 0) {
-         if (value < 0) {
-            last_object++;
-            PUSH_NEW_INTEGER(-1);
-         } else {
-            if (value > last_attribute) last_attribute = value;
-            PUSH_NEW_INTEGER(value);
-         }
-         last_value = value;
+void GetContext(FILE *InF) {
+   const size_t BufMax = 0x400;
+// Read in the file.
+   size_t CurMax = BufMax, CurN = 0;
+   int *CurBuf = GrowBuffer(NULL, CurMax);
+   Atrs = 0, Objs = 0;
+   int ExValue = -1;
+   for (int Value; GetNumber(InF, &Value); ) {
+      if (Value >= Atrs) Atrs = Value + 1;
+      else if (Value < 0) {
+         if (ExValue < 0) continue;
+         Objs++, Value = -1;
       }
-   if (last_value >= 0) {
-      last_object++;
-      PUSH_NEW_INTEGER(-1);
+      if (CurN >= CurMax) CurBuf = GrowBuffer(CurBuf, CurMax += BufMax);
+      ExValue = CurBuf[CurN++] = Value;
    }
-   objects = last_object + 1;
-   attributes = last_attribute + 1;
-}
-
-void create_context(void) {
-   int_count_a = attributes / DATA_BITS + 1, int_count_o = objects / DATA_BITS + 1;
-   context = calloc(int_count_a * objects, sizeof *context);
-   if (context == NULL) fprintf(stderr, "Cannot allocate bitcontext, quitting."), exit(EXIT_FAILURE);
-   supps = calloc(attributes, sizeof *supps);
-   for (int i = 0, row = 0; i < buff_index; i++)
-      if (buff[i] < 0) row++;
-      else {
-         context[row * int_count_a + buff[i] / DATA_BITS] |= BitU << (DATA_BITS - 1 - buff[i] % DATA_BITS);
-         supps[buff[i]]++;
-         table_entries++;
-      }
-   if (verbosity_level >= 2) fprintf(stderr, "objects: %6i\nattributes: %4i\nentries: %8i\n", objects, attributes, table_entries);
-}
-
-void initialize_output(void) {
-   attrib_numbers = malloc(attributes * sizeof *attrib_numbers);
-   for (int i = 0; i < attributes; i++) attrib_numbers[i] = i;
-}
-
-void print_attributes(unsigned long *set, size_t supp) {
-   if (verbosity_level <= 0) return;
-   bool first = true;
-   for (int j = 0, c = 0; j < int_count_a; j++) for (int i = DATA_BITS - 1; i >= 0; i--) {
-      if (set[j] & (BitU << i)) {
-         if (!first) fprintf(out_file, " ");
-         fprintf(out_file, "%i", attrib_numbers[c]);
-         first = false;
-      }
-      if (++c >= attributes) goto out;
+   if (ExValue >= 0) {
+      Objs++;
+      if (CurN >= CurMax) CurBuf = GrowBuffer(CurBuf, CurMax += BufMax);
+      CurBuf[CurN++] = -1;
    }
-out:
-   fprintf(out_file, "\n");
+// Create the context.
+   AtrN = Atrs/DataN + 1, ObjN = Objs/DataN + 1;
+   Context = calloc(AtrN*Objs, sizeof *Context);
+   if (Context == NULL) fprintf(stderr, "Cannot allocate bitcontext, quitting.\n"), exit(EXIT_FAILURE);
+   SupTab = calloc(Atrs, sizeof *SupTab);
+   for (int n = 0, Row = 0; n < CurN; n++)
+      if (CurBuf[n] < 0) Row++;
+      else
+         Context[Row*AtrN + CurBuf[n]/DataN] |= BitU(DataN - 1 - CurBuf[n]%DataN),
+         SupTab[CurBuf[n]]++, Entries++;
+   free(CurBuf);
 }
 
-int cols_compar(const void *a, const void *b) {
-   int x = supps[*(int const *)a], y = supps[*(int const *)b];
-   return x >= min_support ?
-      (y < min_support || x < y ? -1 : x > y ? +1 : 0) :
-      (y >= min_support || x > y ? +1 : x < y ? -1 : 0);
+void MakeAtrs(void) {
+   AtrNum = malloc(Atrs*sizeof *AtrNum);
+   for (int A = 0; A < Atrs; A++) AtrNum[A] = A;
 }
 
-int rows_compar(const void *a, const void *b) {
-   for (int i = 0; i < int_count_a; i++)
-      if (((unsigned long *)a)[i] < ((unsigned long *)b)[i]) return -1;
-      else if (((unsigned long *)a)[i] > ((unsigned long *)b)[i]) return +1;
+void PutAtrs(unsigned long *Set) {
+   if (Noise < 1) return;
+   bool First = true;
+   for (int A = 0, C = 0; A < AtrN; A++) for (int D = DataN - 1; D >= 0; D--) {
+      if (Set[A]&BitU(D)) {
+         if (!First) fprintf(ExF, " "); else First = false;
+         fprintf(ExF, "%i", AtrNum[C]);
+      }
+      if (++C >= Atrs) goto Break;
+   }
+Break:
+   fprintf(ExF, "\n");
+}
+
+void PutContextInfo(void) {
+   if (Noise >= 2) fprintf(stderr, "(:objects %6i :attributes %4i :entries %8i)\n", Objs, Atrs, Entries);
+}
+
+int DiffAtr(const void *XP, const void *YP) {
+   int X = SupTab[*(int const *)XP]; bool LoX = X < LoSup;
+   int Y = SupTab[*(int const *)YP]; bool LoY = Y < LoSup;
+   return LoX != LoY? (LoY? -1: +1): X < Y? -1: X > Y? +1: 0;
+}
+
+int DiffObj(const void *XP, const void *YP) {
+   unsigned long *X = (unsigned long *)XP, *Y = (unsigned long *)YP;
+   for (int A = 0; A < AtrN; A++)
+      if (X[A] < Y[A]) return -1; else if (X[A] > Y[A]) return +1;
    return 0;
 }
 
-void sort_context(void) {
-   int aa = attributes;
-   attributes = 0;
-   for (int i = 0; i < aa; i++)
-      if (supps[i] >= min_support) attributes++;
-   qsort(attrib_numbers, aa, sizeof *attrib_numbers, cols_compar);
-   int a = int_count_a;
-   int_count_a = attributes / DATA_BITS + 1;
-   unsigned long *new_context = calloc(int_count_a * objects, sizeof *new_context);
-   for (int jj = 0, k = 0, ii = DATA_BITS - 1; k < aa; k++)
-      if (supps[attrib_numbers[k]] >= min_support) {
-         int j = attrib_numbers[k] / DATA_BITS, i = DATA_BITS - 1 - attrib_numbers[k] % DATA_BITS;
-         for (int x = 0, y = j, z = jj; x < objects; x++, y += a, z += int_count_a)
-            if (context[y] & (BitU << i)) new_context[z] |= BitU << ii;
-         if (ii > 0) ii--; else ii = DATA_BITS - 1, jj++;
+void SortContext(void) {
+   int ExAtrs = Atrs;
+   Atrs = 0;
+   for (int A = 0; A < ExAtrs; A++)
+      if (SupTab[A] >= LoSup) Atrs++;
+   qsort(AtrNum, ExAtrs, sizeof *AtrNum, DiffAtr);
+   int ExAtrN = AtrN;
+   AtrN = Atrs/DataN + 1;
+   unsigned long *NewContext = calloc(AtrN*Objs, sizeof *NewContext);
+   for (int A = 0, Z0 = 0, D1 = DataN - 1; A < ExAtrs; A++)
+      if (SupTab[AtrNum[A]] >= LoSup) {
+         int D = DataN - 1 - AtrNum[A]%DataN;
+         for (int X = 0, Y = AtrNum[A]/DataN, Z = Z0; X < Objs; X++, Y += ExAtrN, Z += AtrN)
+            if (Context[Y]&BitU(D)) NewContext[Z] |= BitU(D1);
+         if (D1 > 0) D1--; else D1 = DataN - 1, Z0++;
       }
-   free(context), context = new_context;
-   qsort(context, objects, int_count_a * sizeof *context, rows_compar);
+   free(Context), Context = NewContext;
+   qsort(Context, Objs, AtrN*sizeof *Context, DiffObj);
 }
 
-void initialize_algorithm(void) {
-   for (int i = 0; i < DATA_BITS; i++) {
-      upto_bit[i] = NilU;
-      for (int j = DATA_BITS - 1; j > i; j--) upto_bit[i] |= BitU << j;
+void InitializeAlgorithm(void) {
+   for (int D0 = 0; D0 < DataN; D0++) {
+      UpToBit[D0] = NilU;
+      for (int D1 = DataN - 1; D1 > D0; D1--) UpToBit[D0] |= BitU(D1);
    }
-   unsigned long *cols_buff = calloc(int_count_o * attributes, sizeof *cols_buff);
-   cols = malloc(attributes * sizeof *cols);
-   unsigned long *ptr = cols_buff;
-   for (int j = 0, k = 0; j < int_count_a; j++) for (int i = DATA_BITS - 1; i >= 0; i--, k++) {
-      if (k >= attributes) return;
-      unsigned long mask = BitU << i;
-      cols[k] = ptr;
-      for (int x = 0, y = j; x < objects; x++, y += int_count_a)
-         if (context[y] & mask) ptr[x / DATA_BITS] |= BitU << (x % DATA_BITS);
-      ptr += int_count_o;
+   unsigned long *ColBuf = calloc(ObjN*Atrs, sizeof *ColBuf), *ColP = ColBuf;
+   AtrTab = malloc(Atrs*sizeof *AtrTab);
+   for (int N = 0, A = 0; N < AtrN; N++) for (int D = DataN - 1; D >= 0; ColP += ObjN, A++, D--) {
+      if (A >= Atrs) return;
+      unsigned long Mask = BitU(D);
+      AtrTab[A] = ColP;
+      for (int O = 0, ON = N; O < Objs; O++, ON += AtrN)
+         if (Context[ON]&Mask) ColP[O/DataN] |= BitU(O%DataN);
    }
 }
 
-void compute_closure(unsigned long *intent, unsigned long *extent, unsigned long *prev_extent, unsigned long *attr_extent, int *supp) {
-   stats.closures++;
-   memset(intent, 0xff, int_count_a * sizeof *intent);
-   if (attr_extent != NULL) {
-      *supp = 0;
-      for (int k = 0; k < int_count_o; k++) {
-         extent[k] = prev_extent[k] & attr_extent[k];
-         if (extent[k] != 0UL)
-            for (int l = 0; l < DATA_BITS && (extent[k] >> l); l++)
-               if ((extent[k] >> l) & BitU) {
-                  ++*supp;
-                  for (int i = 0, j = int_count_a * (k * DATA_BITS + l); i < int_count_a; i++, j++) intent[i] &= context[j];
+void Closure(unsigned long *In, unsigned long *Ex, unsigned long *ExEx, unsigned long *AtrEx, int *SupP) {
+   CurClosures++;
+   memset(In, 0xff, AtrN*sizeof *In);
+   if (AtrEx != NULL) {
+      *SupP = 0;
+      for (int O = 0; O < ObjN; O++) {
+         Ex[O] = ExEx[O]&AtrEx[O];
+         if (Ex[O] != NilU)
+            for (int D = 0; D < DataN && (Ex[O] >> D) != NilU; D++)
+               if (Ex[O]&BitU(D)) {
+                  for (int A = 0, C = AtrN*(O*DataN + D); A < AtrN; A++, C++) In[A] &= Context[C];
+                  ++*SupP;
                }
       }
    } else {
-      memset(extent, 0xff, int_count_o * sizeof *extent);
-      for (int j = 0; j < objects; j++) for (int i = 0; i < int_count_a; i++) intent[i] &= context[int_count_a * j + i];
+      memset(Ex, 0xff, ObjN*sizeof *Ex);
+      for (int O = 0; O < Objs; O++) for (int A = 0; A < AtrN; A++) In[A] &= Context[AtrN*O + A];
    }
 }
 
-void generate_from_node(unsigned long *intent, unsigned long *extent, int start_int, int start_bit, int *starts, unsigned long **implied, unsigned long ***implied_stack) {
-   int supp = 0;
-   unsigned long ***implied_stack_i = implied_stack;
-   int *start_i = starts;
-   int total = (start_int + 1) * DATA_BITS - 1 - start_bit;
-   unsigned long *new_intent = malloc((int_count_a + int_count_o) * (attributes - total) * sizeof *new_intent);
-   unsigned long *new_intents_head = new_intent;
-   unsigned long *new_extent = new_intent + int_count_a;
-   for (; start_int < int_count_a; start_int++) {
-      for (; start_bit >= 0; start_bit--) {
-         if (total >= attributes) goto skipout;
-         if (intent[start_int] & (BitU << start_bit)) goto skip;
-         if (implied[total] != NULL) {
-            if (implied[total][start_int] & ~(intent[start_int]) & upto_bit[start_bit]) {
-               stats.fail_fcbo++;
-               goto skip;
-            }
-            for (int i = 0; i < start_int; i++)
-               if (implied[total][i] & ~(intent[i])) {
-                  stats.fail_fcbo++;
-                  goto skip;
-               }
-         }
-         compute_closure(new_intent, new_extent, extent, cols[total], &supp);
-         if (supp < min_support) {
-            stats.fail_support++;
-            goto skip;
-         }
-         if ((new_intent[start_int] ^ intent[start_int]) & upto_bit[start_bit]) {
-            stats.fail_canon++;
-            goto skiptoelse;
-         }
-         for (int i = 0; i < start_int; i++)
-            if (new_intent[i] ^ intent[i]) {
-               stats.fail_canon++;
-               goto skiptoelse;
-            }
-         print_attributes(new_intent, supp);
-         stats.total++;
-         *start_i++ = start_int;
-         *start_i++ = start_bit;
-         goto skipoverelse;
-      skiptoelse:
-         *implied_stack_i++ = &implied[total];
-         *implied_stack_i++ = (unsigned long **)implied[total];
-         implied[total] = new_intent;
-         new_intent[int_count_a - 1] |= BitU;
-      skipoverelse:
-         new_intent = new_extent + int_count_o;
-         new_extent = new_intent + int_count_a;
-      skip:
-         total++;
+void ExpandNode(unsigned long *In, unsigned long *Ex, int I0, int D0, int *Starts, unsigned long **Imp, unsigned long ***ImpStack) {
+   int Sup = 0;
+   unsigned long ***ImpSP = ImpStack;
+   int *StartP = Starts;
+   int Total = (I0 + 1)*DataN - 1 - D0;
+   unsigned long *NewInBase = malloc((AtrN + ObjN)*(Atrs - Total)*sizeof *NewInBase);
+   unsigned long *NewIn = NewInBase, *NewEx = NewInBase + AtrN;
+   for (; I0 < AtrN; D0 = DataN - 1, I0++) for (; D0 >= 0; Total++, D0--) {
+      if (Total >= Atrs) goto Break;
+      if (In[I0]&BitU(D0)) continue;
+      if (Imp[Total] != NULL) {
+         if (Imp[Total][I0]&~In[I0]&UpToBit[D0]) { BadFcbo++; continue; }
+         for (int I = 0; I < I0; I++)
+            if (Imp[Total][I]&~In[I]) { BadFcbo++; goto Continue0; }
       }
-      start_bit = DATA_BITS - 1;
+      Closure(NewIn, NewEx, Ex, AtrTab[Total], &Sup);
+      if (Sup < LoSup) { BadSupport++; continue; }
+      if ((NewIn[I0] ^ In[I0])&UpToBit[D0]) { BadCanon++; goto Continue1; }
+      for (int I = 0; I < I0; I++)
+         if (NewIn[I] ^ In[I]) { BadCanon++; goto Continue1; }
+      PutAtrs(NewIn);
+      CurTotal++;
+      *StartP++ = I0, *StartP++ = D0;
+      goto SkipOverElse;
+   Continue1:
+      *ImpSP++ = &Imp[Total], *ImpSP++ = (unsigned long **)Imp[Total];
+      Imp[Total] = NewIn, NewIn[AtrN - 1] |= BitU(0);
+   SkipOverElse:
+      NewIn = NewEx + ObjN, NewEx = NewIn + AtrN;
+   Continue0: ;
    }
-skipout:
-   for (unsigned long *new_intent_i = new_intents_head; new_intent_i != new_intent; new_intent_i = new_extent + int_count_o) {
-      new_extent = new_intent_i + int_count_a;
-      if (new_intent_i[int_count_a - 1] & BitU) continue;
-      if (*(starts + 1) == 0)
-         generate_from_node(new_intent_i, new_extent, *starts + 1, DATA_BITS - 1, start_i, implied, implied_stack_i);
-      else
-         generate_from_node(new_intent_i, new_extent, *starts, *(starts + 1) - 1, start_i, implied, implied_stack_i);
-      starts += 2;
-   }
-   for (; implied_stack != implied_stack_i; implied_stack += 2) **implied_stack = (unsigned long *)*(implied_stack + 1);
-   free(new_intents_head);
-}
-
-void find_all_intents(void) {
-   unsigned long *intent = malloc((int_count_a + int_count_o) * sizeof *intent);
-   unsigned long *extent = intent + int_count_a;
-   compute_closure(intent, extent, NULL, NULL, NULL);
-   print_attributes(intent, objects);
-   stats.total++;
-   if (intent[int_count_a - 1] & BitU) return;
-   int *starts = malloc((attributes + 1) * attributes * sizeof *starts);
-   unsigned long **implied = calloc(attributes, sizeof *implied);
-   unsigned long ***implied_stack = malloc((attributes + 1) * attributes * sizeof *implied_stack);
-   generate_from_node(intent, extent, 0, DATA_BITS - 1, starts, implied, implied_stack);
-}
-
-int main(int argc, char **argv) {
-   in_file = stdin, out_file = stdout;
-   if (argc > 1) {
-      int index = 1;
-      for (; index < argc && argv[index][0] == '-' && argv[index][1] != 0; index++) switch (argv[index][1]) {
-         case 'h': fprintf(stderr, "synopsis: %s [-h] [-index] [-Smin-support] [-Vlevel] [INPUT-FILE] [OUTPUT-FILE]\n", argv[0]); return EXIT_SUCCESS;
-         case 'S': min_support = atoi(argv[index] + 2); break;
-         case 'V': verbosity_level = atoi(argv[index] + 2); break;
-         default:
-            attr_offset = atoi(argv[index] + 1);
-            if (attr_offset < 0) attr_offset = 0;
+Break:
+   for (unsigned long *NewInP = NewInBase; NewInP != NewIn; NewInP += AtrN + ObjN)
+      if (!(NewInP[AtrN - 1]&BitU(0))) {
+         int S0 = *Starts++, S1 = *Starts++;
+         bool DoHi = S1 == 0;
+         int I1 = DoHi? S0 + 1: S0, D1 = DoHi? DataN: S1;
+         ExpandNode(NewInP, NewInP + AtrN, I1, D1 - 1, StartP, Imp, ImpSP);
       }
-      if (argc > index && argv[index][0] != '-') in_file = fopen(argv[index], "rb");
-      if (argc > index + 1 && argv[index + 1][0] != '-') out_file = fopen(argv[index + 1], "wb");
+   for (; ImpStack != ImpSP; ImpStack += 2) **ImpStack = (unsigned long *)*(ImpStack + 1);
+   free(NewInBase);
+}
+
+void FindAllIntents(void) {
+   unsigned long *In = malloc((AtrN + ObjN)*sizeof *In);
+   unsigned long *Ex = In + AtrN;
+   Closure(In, Ex, NULL, NULL, NULL);
+   PutAtrs(In);
+   CurTotal++;
+   if (In[AtrN - 1]&BitU(0)) return;
+   int *Starts = malloc((Atrs + 1)*Atrs*sizeof *Starts);
+   unsigned long **Imp = calloc(Atrs, sizeof *Imp);
+   unsigned long ***ImpStack = malloc((Atrs + 1)*Atrs*sizeof *ImpStack);
+   ExpandNode(In, Ex, 0, DataN - 1, Starts, Imp, ImpStack);
+}
+
+int main(int AC, char **AV) {
+   char *App = AC == 0? NULL: AV[0]; if (App == NULL || *App == '\0') App = "FCbO";
+   InF = stdin, ExF = stdout;
+   if (AC > 1) {
+      int A = 1;
+      for (; A < AC; A++) {
+         char *Arg = AV[A];
+         if (*Arg++ != '-' || *Arg == '\0') break;
+         else switch (*Arg) {
+            case 'h': fprintf(stderr, "synopsis: %s [-h] [-index] [-Smin-support] [-Vlevel] [INPUT-FILE] [OUTPUT-FILE]\n", App); return EXIT_SUCCESS;
+            case 'S': LoSup = atoi(++Arg); break;
+            case 'V': Noise = atoi(++Arg); break;
+            default:
+               Atr0 = atoi(Arg); if (Atr0 < 0) Atr0 = 0;
+            break;
+         }
+      }
+      char *InFile = A < AC? AV[A]: NULL;
+      char *ExFile = A + 1 < AC? AV[A + 1]: NULL;
+      if (InFile != NULL && *InFile != '-') InF = fopen(InFile, "rb");
+      if (ExFile != NULL && *ExFile != '-') ExF = fopen(ExFile, "wb");
    }
-   if (in_file == NULL) { fprintf(stderr, "%s: cannot open input data stream\n", argv[0]); return EXIT_FAILURE; }
-   if (out_file == NULL) { fprintf(stderr, "%s: open output data stream\n", argv[0]); return EXIT_FAILURE; }
-   if (verbosity_level >= 3) gettimeofday(&time_start, NULL);
-   read_file(in_file);
-   create_context();
-   free(buff);
-   fclose(in_file);
-   if (verbosity_level >= 3) gettimeofday(&time_inner, NULL);
-   initialize_output();
-   sort_context();
-   initialize_algorithm();
-   find_all_intents();
-   if (verbosity_level >= 3) {
-      gettimeofday(&time_end, NULL);
-      long usec_less = time_end.tv_usec < time_inner.tv_usec ? 1L : 0L;
-      fprintf(stderr, "inner time: %li.%06li s\n", time_end.tv_sec - time_inner.tv_sec - usec_less, usec_less * 1000000 + time_end.tv_usec - time_inner.tv_usec);
-      usec_less = time_end.tv_usec < time_start.tv_usec ? 1L : 0L;
-      fprintf(stderr, "total time: %li.%06li s\n", time_end.tv_sec - time_start.tv_sec - usec_less, usec_less * 1000000 + time_end.tv_usec - time_start.tv_usec);
+   if (InF == NULL) { fprintf(stderr, "%s: cannot open input data stream\n", App); return EXIT_FAILURE; }
+   if (ExF == NULL) { fprintf(stderr, "%s: open output data stream\n", App); return EXIT_FAILURE; }
+   if (Noise >= 3) gettimeofday(&BegTime, NULL);
+   GetContext(InF);
+   fclose(InF);
+   PutContextInfo();
+   if (Noise >= 3) gettimeofday(&CurTime, NULL);
+   MakeAtrs();
+   SortContext();
+   InitializeAlgorithm();
+   FindAllIntents();
+   if (Noise >= 3) {
+      gettimeofday(&EndTime, NULL);
+      long dT = EndTime.tv_usec < CurTime.tv_usec? 1L: 0L;
+      fprintf(stderr, "Inner time: %li.%06li s\n", EndTime.tv_sec - CurTime.tv_sec - dT, dT*1000000 + EndTime.tv_usec - CurTime.tv_usec);
+      dT = EndTime.tv_usec < BegTime.tv_usec? 1L: 0L;
+      fprintf(stderr, "Total time: %li.%06li s\n", EndTime.tv_sec - BegTime.tv_sec - dT, dT*1000000 + EndTime.tv_usec - BegTime.tv_usec);
    }
-   if (verbosity_level >= 2) fprintf(stderr, "total: %i\nclosures: %i\nfail_canon: %i\nfail_fcbo: %i\nfail_support: %i\n", stats.total, stats.closures, stats.fail_canon, stats.fail_fcbo, stats.fail_support);
-   fclose(out_file);
+   if (Noise >= 2) fprintf(stderr, "(total: %i closures: %i fail_canon: %i fail_fcbo: %i fail_support: %i)\n", CurTotal, CurClosures, BadCanon, BadFcbo, BadSupport);
+   fclose(ExF);
    return EXIT_SUCCESS;
 }

@@ -3,24 +3,20 @@
 // Jan Outrata, <jan.outrata@upol.cz>
 // Vilem Vychodil, <vilem.vychodil@gmail.com>
 //
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License version 2 as
-// published by the Free Software Foundation.
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of the GNU General Public License version 2 as published by the Free Software Foundation.
 //
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+// without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-
+// You should have received a copy of the GNU General Public License along with this program;
+// if not, write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+//
 // Iterative Greedy Concepts on Demand from Essential Elements
 // (IterEss) algorithm
 // Copyright (C) 2013
 // Jan Outrata, <jan.outrata@upol.cz>
-
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,1045 +28,802 @@
 
 #define STATS
 
-// Basic data types
-typedef long count_t;
-typedef char small_count_t;
+// Basic data types.
+typedef long CountT;
+typedef char ClassT;
 
-// Error handling
-char *program_name = NULL;
+// Error handling.
+char *App = NULL;
 
-void error(char *Format, ...) {
-   fprintf(stderr, "%s: ", program_name);
-   va_list args; va_start(args, Format), vfprintf(stderr, Format, args), va_end(args);
+void Error(char *Format, ...) {
+   fprintf(stderr, "%s: ", App);
+   va_list AP; va_start(AP, Format), vfprintf(stderr, Format, AP), va_end(AP);
+   fputc('\n', stderr);
 }
 
-// Counters and times
 #ifdef STATS
-typedef struct {
-   count_t *counters;
-   char **counter_texts;
-   int ncounters;
-   struct timeval *times;
-   char **time_texts;
-   int ntimes;
-   int time_pos;
-} stats_t;
-#   define STATS_INITIALIZER {NULL, NULL, 0, NULL, NULL, 0, 0}
-#   define Counter	(stats[0].counters)
-#   define CounterText	(stats[0].counter_texts)
-#   define Counters	(stats[0].ncounters)
-#   define Time		(stats[0].times)
-#   define TimeText	(stats[0].time_texts)
-#   define Times	(stats[0].ntimes)
-#   define TimePos	(stats[0].time_pos)
-#   define STATS_DATA_PARAM , stats_t *stats
-#   define STATS_DATA_ARG , stats
-#   define INC_COUNTER(c) Counter[c]++
-#   define ADD_COUNTER(c, v) Counter[c] += v
-#   define SET_COUNTER(c, v) Counter[c] = v
-#   define SET_COUNTER_TEXT(c, t) CounterText[c] = t
-#   define SAVE_TIME(t) if (TimePos < Times) (gettimeofday(&Time[TimePos], NULL), TimeText[TimePos++] = t)
+// Counters and times.
+// For boolean factors as formal concepts.
+CountT Factors = 0, Closures = 0, UnCovered = 0, OverCovered = 0;
+// For the IterEss algorithm.
+CountT EssContexts = 0;
+#   define MaxTimes 10
+struct timeval Time[MaxTimes];
+char *TimeText[MaxTimes];
+int Times = 0;
+#   define SaveTime(Text) if (Times < MaxTimes) (gettimeofday(&Time[Times], NULL), TimeText[Times++] = Text)
 #else
-#   define STATS_DATA_PARAM
-#   define STATS_DATA_ARG
-#   define INC_COUNTER(c)
-#   define ADD_COUNTER(c, v)
-#   define SET_COUNTER(c, v)
-#   define SET_COUNTER_TEXT(c, t)
-#   define SAVE_TIME(t)
+#   define SaveTime(Text)
 #endif
 
-#ifdef STATS
-void init_stats(stats_t **stats_p, int count, int counters, int times) {
-   stats_t *stats = *stats_p = malloc(count * sizeof *stats);
-   Counter = calloc(count * counters, sizeof *Counter);
-   CounterText = calloc(count * counters, sizeof *CounterText);
-   Time = malloc(count * times * sizeof *Time);
-   TimeText = malloc(count * times * sizeof *TimeText);
-   while (--count > 0) {
-      stats[count].counters = Counter + count * counters;
-      stats[count].counter_texts = CounterText;
-      stats[count].times = Time + count * times;
-      stats[count].time_texts = TimeText;
-      stats[count].time_pos = 0;
-      stats[count].ncounters = counters;
-      stats[count].ntimes = times;
-   }
-   TimePos = 0;
-   Counters = counters;
-   Times = times;
+// Input/Output interface.
+const size_t IoBufMax = 0x100000;
+
+typedef enum { SepOaIO = -3, SepClassIO = -2, EndSetIO = -1 } IoCharT;
+
+typedef enum { ExFL = 1, InFL = 2 } IoFlagT;
+
+typedef struct IoBufT {
+   CountT *PutP; int PutN;
+   CountT *GetP; int GetN;
+   CountT *Buf; int BufN;
+} *IoBufT;
+
+typedef struct IoT *IoT;
+typedef void (*IoOpT)(IoT Io, void *X, IoFlagT Flags);
+struct IoT {
+   struct IoBufT Buf;
+   IoOpT Op; void *Arg;
+};
+
+IoBufT MakeIoBuf(IoT Io, int N) {
+   if (Io->Buf.Buf != NULL) {
+      CountT *ExBase = Io->Buf.Buf;
+      Io->Buf.Buf = realloc(Io->Buf.Buf, N*sizeof *Io->Buf.Buf);
+      if (Io->Buf.Buf != NULL && Io->Buf.Buf != ExBase) Io->Buf.PutP += Io->Buf.Buf - ExBase, Io->Buf.GetP += Io->Buf.Buf - ExBase;
+   } else Io->Buf.Buf = Io->Buf.PutP = Io->Buf.GetP = malloc(N*sizeof *Io->Buf.Buf);
+   if (Io->Buf.Buf == NULL) { Error("Cannot allocate I/O buffer"); return NULL; }
+   Io->Buf.PutN += N - Io->Buf.BufN, Io->Buf.BufN = N;
+   return &Io->Buf;
 }
 
-void free_stats(stats_t **stats_p) {
-   stats_t *stats = *stats_p;
-   free(Counter);
-   free(CounterText);
-   free(Time);
-   free(TimeText);
-   free(stats);
-   *stats_p = NULL;
-}
-#endif
-
-// Input/Output interface
-#define IO_BUFFER_BLOCK	0x100000
-typedef enum {
-   IO_MARK_CONCEPT_HELP = -7,
-   IO_MARK_CONCEPT_UPPER,
-   IO_MARK_CONCEPT_LOWER,
-   IO_MARK_CONCEPT_MODIFIED,
-   IO_SEP_OA,
-   IO_SEP_CLASS,
-   IO_END_SET
-} io_char_t;
-
-typedef enum { INPUT_LABELS = 1, INPUT_LABELS_ONLY = 1 << 1, OUTPUT_ALL = 1 << 8 } io_flags_t;
-
-typedef struct {
-   count_t *write_ptr;
-   count_t *read_ptr;
-   int write_left;
-   int read_left;
-   int size;
-   count_t *base;
-} io_buffer_t;
-
-struct io_struc;
-typedef void (io_func_t)(struct io_struc *io, void *data, io_flags_t flags);
-typedef struct io_struc {
-   io_buffer_t buffer;
-   io_func_t *func;
-   void *func_data;
-} io_t;
-
-#define IO_INITIALIZER {{NULL, NULL, 0, 0, 0, NULL}, NULL, NULL}
-
-#define IO_WRITE(_io, _value) { \
-   if ((_io)->buffer.write_left == 0) alloc_io_buffer(_io, (_io)->buffer.size + IO_BUFFER_BLOCK); \
-   *(_io)->buffer.write_ptr = _value, (_io)->buffer.write_ptr++, (_io)->buffer.write_left--, (_io)->buffer.read_left++; \
+static inline void PutIO(IoT Io, CountT Value) {
+   if (Io->Buf.PutN == 0) MakeIoBuf(Io, Io->Buf.BufN + IoBufMax);
+   *Io->Buf.PutP++ = Value, Io->Buf.PutN--, Io->Buf.GetN++;
 }
 
-#define IO_READ(_io, _var) (_var = *(_io)->buffer.read_ptr, (_io)->buffer.read_ptr++, (_io)->buffer.read_left--)
-
-#define IO_FUNC(_io, _flags) { \
-   if ((_io)->func != NULL) (_io)->func(_io, (_io)->func_data, _flags); \
+static inline CountT GetIO(IoT Io) {
+   Io->Buf.GetN--;
+   return *Io->Buf.GetP++;
 }
 
-void reset_io(io_t *io) {
-   io->buffer.write_ptr = io->buffer.read_ptr = io->buffer.base;
-   io->buffer.write_left = io->buffer.size;
-   io->buffer.read_left = 0;
+static inline void OpIO(IoT Io, IoFlagT Flags) {
+   if (Io->Op != NULL) Io->Op(Io, Io->Arg, Flags);
 }
 
-void init_io(io_t *io, io_func_t *func, void *func_data) {
-   io->buffer.base = NULL;
-   io->buffer.size = 0;
-   reset_io(io);
-   io->func = func;
-   io->func_data = func_data;
+void MakeIO(IoT Io, IoOpT Op, void *Arg) {
+   Io->Buf.PutP = Io->Buf.GetP = Io->Buf.Buf = NULL;
+   Io->Buf.PutN = Io->Buf.GetN = Io->Buf.BufN = 0;
+   Io->Op = Op, Io->Arg = Arg;
 }
 
-void free_io(io_t *io) {
-   if (io->buffer.base) free(io->buffer.base);
-   init_io(io, NULL, NULL);
+void FreeIO(IoT Io) {
+   if (Io->Buf.Buf != NULL) free(Io->Buf.Buf), Io->Buf.Buf = NULL;
+   MakeIO(Io, NULL, NULL);
 }
 
-io_buffer_t *alloc_io_buffer(io_t *io, int size) {
-   if (io->buffer.base != NULL) {
-      count_t *old_base = io->buffer.base;
-      io->buffer.base = realloc(io->buffer.base, size * sizeof *io->buffer.base);
-      if (io->buffer.base != NULL && io->buffer.base != old_base) {
-         io->buffer.write_ptr += io->buffer.base - old_base;
-         io->buffer.read_ptr += io->buffer.base - old_base;
-      }
-   } else io->buffer.base = io->buffer.write_ptr = io->buffer.read_ptr = malloc(size * sizeof *io->buffer.base);
-   if (io->buffer.base == NULL) {
-      error("cannot allocate I/O buffer");
-      return NULL;
-   }
-   io->buffer.write_left += size - io->buffer.size;
-   io->buffer.size = size;
-   return &io->buffer;
-}
-
-// File input
-bool get_next_number_from_file(FILE *file, count_t *value) {
-   *value = IO_END_SET;
-   int ch = ' ';
-   while (ch != EOF && !isdigit(ch)) {
-      ch = fgetc(file);
-      if (ch == '\n') return true;
-      else if (ch == '|') {
-         *value = IO_SEP_CLASS;
-         return true;
-      }
-   }
-   if (ch == EOF) return false;
-   *value = 0;
-   while (isdigit(ch)) {
-      *value *= 10;
-      *value += ch - '0';
-      ch = fgetc(file);
-   }
-   ungetc(ch, file);
+// File input.
+bool GetNumber(FILE *InF, CountT *ValueP) {
+   *ValueP = EndSetIO;
+   int Ch = ' ';
+   while (Ch != EOF && !isdigit(Ch))
+      if ((Ch = fgetc(InF)) == '\n') return true;
+      else if (Ch == '|') { *ValueP = SepClassIO; return true; }
+   if (Ch == EOF) return false;
+   for (*ValueP = 0; isdigit(Ch); Ch = fgetc(InF)) *ValueP *= 10, *ValueP += Ch - '0';
+   ungetc(Ch, InF);
    return true;
 }
 
-void read_file_to_io(io_t *io, FILE *file, io_flags_t flags) {
-   count_t last_object = -1;
-   IO_WRITE(io, last_object + 1);
-   count_t last_attribute = -1;
-   if (!(flags & INPUT_LABELS_ONLY)) IO_WRITE(io, last_attribute + 1);
-   small_count_t classes = 0;
-   if (flags & (INPUT_LABELS | INPUT_LABELS_ONLY)) IO_WRITE(io, classes);
-   count_t value = 0;
-   small_count_t last_class = -1;
-   int labels = flags & INPUT_LABELS_ONLY;
-   while (get_next_number_from_file(file, &value) != 0) {
-      if (value == IO_END_SET) {
-         last_object++;
-         IO_WRITE(io, IO_END_SET);
-         if (last_class >= classes) classes = last_class + 1;
-         last_class = -1;
-         labels = flags & INPUT_LABELS_ONLY;
-      } else if (value == IO_SEP_CLASS) {
-         labels = 1;
-         if ((flags & INPUT_LABELS) && !(flags & INPUT_LABELS_ONLY)) IO_WRITE(io, IO_SEP_CLASS);
-      } else if (labels != 0) {
-         last_class++;
-         if (flags & (INPUT_LABELS | INPUT_LABELS_ONLY)) IO_WRITE(io, value);
+void ReadIO(IoT Io, FILE *InF, IoFlagT Flags) {
+   CountT Obj = 0;
+   PutIO(Io, Obj);
+   CountT Atr = 0;
+   if (!(Flags&InFL)) PutIO(Io, Atr);
+   CountT Value = 0;
+   ClassT ExClass = 0, Classes = 0;
+   if (Flags&ExFL) PutIO(Io, Classes);
+   int Labels = Flags&InFL;
+   while (GetNumber(InF, &Value)) {
+      if (Value == EndSetIO) {
+         PutIO(Io, EndSetIO), Obj++;
+         if (ExClass > Classes) Classes = ExClass;
+         ExClass = 0, Labels = Flags&InFL;
+      } else if (Value == SepClassIO) {
+         Labels = InFL | ExFL;
+         if (Flags&ExFL) PutIO(Io, SepClassIO);
+      } else if (Labels != 0) {
+         ExClass++;
+         if (Flags&ExFL) PutIO(Io, Value);
       } else {
-         if (value > last_attribute) last_attribute = value;
-         IO_WRITE(io, value);
+         if (Value >= Atr) Atr = Value + 1;
+         PutIO(Io, Value);
       }
    }
-   if (value >= 0) {
-      last_object++;
-      IO_WRITE(io, IO_END_SET);
-      if (last_class >= classes) classes = last_class + 1;
+   if (Value >= 0) {
+      PutIO(Io, EndSetIO), Obj++;
+      if (ExClass > Classes) Classes = ExClass;
    }
-   *io->buffer.read_ptr = last_object + 1;
-   if (!(flags & INPUT_LABELS_ONLY)) {
-      *(io->buffer.read_ptr + 1) = last_attribute + 1;
-      if (flags & INPUT_LABELS) *(io->buffer.read_ptr + 2) = classes;
-   } else *(io->buffer.read_ptr + 1) = classes;
+   *Io->Buf.GetP = Obj;
+   if (Flags&InFL) Io->Buf.GetP[1] = Classes;
+   else {
+      Io->Buf.GetP[1] = Atr;
+      if (Flags&InFL) Io->Buf.GetP[2] = Classes;
+   }
 }
 
-// File output
-#define OUTPUT_BLOCK 0x400
+// File output.
+const size_t ExBufMax = 0x400;
 
-void write_file_from_io(io_t *io, FILE *file, io_flags_t flags) {
-   if (io->buffer.read_left < OUTPUT_BLOCK && !(flags & OUTPUT_ALL)) return;
-   bool first = true;
-   while (io->buffer.read_left != 0) {
-      count_t value; IO_READ(io, value);
-      if (value == IO_END_SET) fprintf(file, "\n"), first = true;
+void WriteIO(IoT Io, FILE *ExF, IoFlagT Flags) {
+   if (Io->Buf.GetN < ExBufMax && !(Flags&ExFL)) return;
+   bool First = true;
+   while (Io->Buf.GetN != 0) {
+      CountT Value = GetIO(Io);
+      if (Value == EndSetIO) fprintf(ExF, "\n"), First = true;
       else {
-         if (!first) fprintf(file, " ");
-         switch (value) {
-            case IO_SEP_CLASS: case IO_SEP_OA: fprintf(file, "|"); break;
-            case IO_MARK_CONCEPT_MODIFIED: fprintf(file, "*"); break;
-            case IO_MARK_CONCEPT_LOWER: fprintf(file, "<"); break;
-            case IO_MARK_CONCEPT_UPPER: fprintf(file, ">"); break;
-            case IO_MARK_CONCEPT_HELP: fprintf(file, "-"); break;
-            default: fprintf(file, "%li", value);
+         if (!First) fprintf(ExF, " "); else First = false;
+         switch (Value) {
+            case SepClassIO: case SepOaIO: fprintf(ExF, "|"); break;
+            default: fprintf(ExF, "%li", Value);
          }
-         first = false;
       }
    }
-   reset_io(io);
+   Io->Buf.PutP = Io->Buf.GetP = Io->Buf.Buf;
+   Io->Buf.PutN = Io->Buf.BufN, Io->Buf.GetN = 0;
 }
 
-// Formal context
-typedef unsigned long data_t;
-const data_t BitU = (data_t)1, NilU = (data_t)0, AllU = (data_t)-1;
-#define DATA_BITS	(8 * sizeof(data_t))
-#define DT_SIZE_A	(sizeof(data_t) * context->dt_count_a)
-#define DT_SIZE_O	(sizeof(data_t *) * (context->objects + 1))
-#define DT_SIZE_Ox(x)	(sizeof(data_t *) * (x + 1))
+// Formal Context.
+typedef unsigned long DataT;
+#define BitU(D)	((DataT)(1UL << (D)))
+const DataT NilU = (DataT)0UL, AllU = (DataT)~(unsigned long)NilU;
+#define DataN	(8*sizeof(DataT))
+#define DataA	(Ctx->AtrN*sizeof(DataT))
+#define DataO	((Ctx->Objs + 1)*sizeof(DataT *))
+#define DataOx(X)	((CountT)((X) + 1)*sizeof(DataT *))
 
-typedef enum { CONTEXT_SORT_COLS = 1, CONTEXT_SORT_ROWS = 1 << 1 } context_sort_t;
+typedef struct ContextT {
+   CountT Atrs, *AtrNum, AtrN;
+   CountT Objs, *ObjNum;
+   CountT Entries, *Sup;
+   DataT *Table, **Row;
+} *ContextT;
 
-typedef struct context_struc {
-   count_t attributes;
-   count_t objects;
-   count_t dt_count_a;
-   count_t table_entries;
-   data_t *bitarray;
-   data_t **rows;
-   count_t *supps;
-   count_t *attrib_numbers;
-   count_t *object_numbers;
-} context_t;
+ContextT SortedCtx = NULL;
 
-#define CONTEXT_INITIALIZER {0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
-
-context_t *qsort_context = NULL;
-
-void create_context(context_t *context, count_t objects, count_t attributes) {
-   context->attributes = attributes;
-   context->objects = objects;
-   context->dt_count_a = attributes / DATA_BITS + 1;
-   context->bitarray = calloc(context->dt_count_a * objects, sizeof *context->bitarray);
-   if (context->bitarray == NULL) error("cannot allocate context");
-   context->rows = malloc(objects * sizeof *context->rows);
-   for (count_t i = 0; i < objects; i++) context->rows[i] = context->bitarray + i * context->dt_count_a;
-   context->supps = calloc(attributes, sizeof *context->supps);
-   context->table_entries = 0;
-   context->attrib_numbers = malloc(attributes * sizeof *context->attrib_numbers);
-   for (count_t i = 0; i < attributes; i++) context->attrib_numbers[i] = i;
-   context->object_numbers = malloc(objects * sizeof *context->object_numbers);
-   for (count_t i = 0; i < objects; i++) context->object_numbers[i] = i;
+void MakeContext(ContextT Ctx, CountT Objs, CountT Atrs) {
+   Ctx->Entries = 0;
+   Ctx->Atrs = Atrs;
+   Ctx->Sup = calloc(Atrs, sizeof *Ctx->Sup);
+   Ctx->AtrNum = malloc(Atrs*sizeof *Ctx->AtrNum);
+   for (CountT A = 0; A < Atrs; A++) Ctx->AtrNum[A] = A;
+   Ctx->AtrN = Atrs/DataN + 1;
+   Ctx->Table = calloc(Objs*Ctx->AtrN, sizeof *Ctx->Table);
+   if (Ctx->Table == NULL) Error("Cannot allocate context");
+   Ctx->Objs = Objs;
+   Ctx->Row = malloc(Objs*sizeof *Ctx->Row);
+   for (CountT O = 0; O < Objs; O++) Ctx->Row[O] = Ctx->Table + O*Ctx->AtrN;
+   Ctx->ObjNum = malloc(Objs*sizeof *Ctx->ObjNum);
+   for (CountT O = 0; O < Objs; O++) Ctx->ObjNum[O] = O;
 }
 
-void destroy_context(context_t *context) {
-   if (context->bitarray) free(context->bitarray);
-   if (context->rows) free(context->rows);
-   if (context->supps) free(context->supps);
-   if (context->attrib_numbers) free(context->attrib_numbers);
-   if (context->object_numbers) free(context->object_numbers);
+void FreeContext(ContextT Ctx) {
+   if (Ctx->Table != NULL) free(Ctx->Table);
+   if (Ctx->Row != NULL) free(Ctx->Row);
+   if (Ctx->Sup != NULL) free(Ctx->Sup);
+   if (Ctx->AtrNum != NULL) free(Ctx->AtrNum);
+   if (Ctx->ObjNum != NULL) free(Ctx->ObjNum);
 }
 
-void copy_context(context_t *to_context, context_t *from_context) {
-   create_context(to_context, from_context->objects, from_context->attributes);
-   memcpy(to_context->bitarray, from_context->bitarray, to_context->dt_count_a * to_context->objects * sizeof *to_context->bitarray);
-   memcpy(to_context->supps, from_context->supps, to_context->attributes * sizeof *to_context->supps);
-   to_context->table_entries = from_context->table_entries;
-   memcpy(to_context->attrib_numbers, from_context->attrib_numbers, to_context->attributes * sizeof *to_context->attrib_numbers);
-   memcpy(to_context->object_numbers, from_context->object_numbers, to_context->objects * sizeof *to_context->object_numbers);
+void CopyContext(ContextT Ad, ContextT De) {
+   MakeContext(Ad, De->Objs, De->Atrs);
+   memcpy(Ad->Table, De->Table, Ad->AtrN*Ad->Objs*sizeof *Ad->Table);
+   memcpy(Ad->Sup, De->Sup, Ad->Atrs*sizeof *Ad->Sup);
+   Ad->Entries = De->Entries;
+   memcpy(Ad->AtrNum, De->AtrNum, Ad->Atrs*sizeof *Ad->AtrNum);
+   memcpy(Ad->ObjNum, De->ObjNum, Ad->Objs*sizeof *Ad->ObjNum);
 }
 
-void input_context_from_io(context_t *context, io_t *io, count_t attr_offset) {
-   IO_FUNC(io, 0);
-   count_t object; IO_READ(io, object);
-   count_t value; IO_READ(io, value);
-   create_context(context, object, value);
-   object = 0;
-   while (io->buffer.read_left != 0) {
-      IO_READ(io, value);
-      if (value == IO_END_SET) object++;
-      else if ((value -= attr_offset) < 0) error("invalid input value %li (minimum value is %li)", value + attr_offset, attr_offset);
-      else {
-         context->rows[object][value / DATA_BITS] |= BitU << (DATA_BITS - 1 - value % DATA_BITS);
-         context->supps[value]++;
-         context->table_entries++;
-      }
+void IoToContext(ContextT Ctx, IoT Io, CountT Atr0) {
+   OpIO(Io, 0);
+   CountT Obj = GetIO(Io), Val = GetIO(Io); MakeContext(Ctx, Obj, Val);
+   Obj = 0;
+   while (Io->Buf.GetN != 0) {
+      Val = GetIO(Io);
+      if (Val == EndSetIO) Obj++;
+      else if ((Val -= Atr0) < 0) Error("Invalid input value %li (minimum value is %li)", Val + Atr0, Atr0);
+      else
+         Ctx->Row[Obj][Val/DataN] |= BitU(DataN - 1 - Val%DataN),
+         Ctx->Sup[Val]++, Ctx->Entries++;
    }
 }
 
-void output_context_to_io(context_t *context, io_t *io) {
-   for (count_t i = 0; i < context->objects; i++) {
-      for (count_t j = 0, total = 0; j < context->dt_count_a; j++) for (int k = DATA_BITS - 1; k >= 0; k--, total++) {
-         if (total >= context->attributes) goto skipout;
-         if (context->rows[i][j] & (BitU << k)) IO_WRITE(io, context->attrib_numbers[total]);
-      }
-   skipout:
-      IO_WRITE(io, IO_END_SET);
-   }
-   IO_FUNC(io, OUTPUT_ALL);
+int DiffAtr(const void *XP, const void *YP) {
+   CountT X = SortedCtx->Sup[*(CountT const *)XP];
+   CountT Y = SortedCtx->Sup[*(CountT const *)YP];
+   return X < Y? -1: X > Y? +1: 0;
 }
 
-int context_attrib_numbers_compar(const void *a, const void *b) {
-   count_t x = qsort_context->supps[*(count_t const *)a], y = qsort_context->supps[*(count_t const *)b];
-   return x < y ? -1 : x > y ? +1 : 0;
-}
-
-int context_object_numbers_compar(const void *a, const void *b) {
-   for (count_t i = 0; i < qsort_context->dt_count_a; i++)
-      if (qsort_context->rows[*(count_t const *)a][i] < qsort_context->rows[*(count_t const *)b][i]) return -1;
-      else if (qsort_context->rows[*(count_t const *)a][i] > qsort_context->rows[*(count_t const *)b][i]) return +1;
+int DiffObj(const void *XP, const void *YP) {
+   DataT const *Xr = SortedCtx->Row[*(CountT const *)XP];
+   DataT const *Yr = SortedCtx->Row[*(CountT const *)YP];
+   for (CountT A = 0; A < SortedCtx->AtrN; A++)
+      if (Xr[A] < Yr[A]) return -1; else if (Xr[A] > Yr[A]) return +1;
    return 0;
 }
 
-int context_objects_compar(const void *a, const void *b) {
-   for (count_t i = 0; i < qsort_context->dt_count_a; i++)
-      if (((data_t const *)a)[i] < ((data_t const *)b)[i]) return -1;
-      else if (((data_t const *)a)[i] > ((data_t const *)b)[i]) return +1;
+int DiffItem(const void *XP, const void *YP) {
+   DataT const *Xr = (DataT const *)XP;
+   DataT const *Yr = (DataT const *)YP;
+   for (CountT A = 0; A < SortedCtx->AtrN; A++)
+      if (Xr[A] < Yr[A]) return -1; else if (Xr[A] > Yr[A]) return +1;
    return 0;
 }
 
-void reorder_attribs_in_context(context_t *context, count_t *attrib_numbers) {
-   data_t *bitarray = malloc(context->dt_count_a * context->objects * sizeof *bitarray);
-   memcpy(bitarray, context->bitarray, context->dt_count_a * context->objects * sizeof *bitarray);
-   memset(context->bitarray, 0, context->dt_count_a * context->objects * sizeof *context->bitarray);
-   count_t *supps = malloc(context->attributes * sizeof *supps);
-   memcpy(supps, context->supps, context->attributes * sizeof *supps);
-   for (count_t i = 0, total = 0; i < context->dt_count_a; i++) for (int j = DATA_BITS - 1; j >= 0; j--, total++) {
-      if (total >= context->attributes) goto skipout;
-      for (count_t o = 0; o < context->objects; o++)
-         if (bitarray[o * context->dt_count_a + attrib_numbers[total] / DATA_BITS] & (BitU << (DATA_BITS - 1 - attrib_numbers[total] % DATA_BITS))) context->rows[o][i] |= BitU << j;
-      context->supps[total] = supps[attrib_numbers[total]];
+void SortContextAtr(ContextT Ctx, CountT *AtrNum) {
+   DataT *Table = malloc(Ctx->AtrN*Ctx->Objs*sizeof *Table);
+   memcpy(Table, Ctx->Table, Ctx->AtrN*Ctx->Objs*sizeof *Table);
+   memset(Ctx->Table, 0, Ctx->AtrN*Ctx->Objs*sizeof *Ctx->Table);
+   CountT *Sup = malloc(Ctx->Atrs*sizeof *Sup);
+   memcpy(Sup, Ctx->Sup, Ctx->Atrs*sizeof *Sup);
+   for (CountT N = 0, A = 0; N < Ctx->AtrN; N++) for (int D = DataN - 1; D >= 0; D--, A++) {
+      if (A >= Ctx->Atrs) goto Break;
+      for (CountT O = 0; O < Ctx->Objs; O++)
+         if (Table[O*Ctx->AtrN + AtrNum[A]/DataN]&BitU(DataN - 1 - AtrNum[A]%DataN)) Ctx->Row[O][N] |= BitU(D);
+      Ctx->Sup[A] = Sup[AtrNum[A]];
    }
-skipout:
-   if (context->attrib_numbers != attrib_numbers) memcpy(context->attrib_numbers, attrib_numbers, context->attributes * sizeof *context->attrib_numbers);
-   free(bitarray);
-   free(supps);
+Break:
+   if (Ctx->AtrNum != AtrNum) memcpy(Ctx->AtrNum, AtrNum, Ctx->Atrs*sizeof *Ctx->AtrNum);
+   free(Sup);
+   free(Table);
 }
 
-void sort_context(context_t *context, int sort_by) {
-   if (sort_by & CONTEXT_SORT_COLS) {
-      qsort_context = context;
-      qsort(context->attrib_numbers, context->attributes, sizeof *context->attrib_numbers, context_attrib_numbers_compar);
-      reorder_attribs_in_context(context, context->attrib_numbers);
+typedef enum { SortByX = 1 << 0, SortByY = 1 << 1 } SortModeT;
+SortModeT SortBy = 0;
+
+void SortContext(ContextT Ctx, SortModeT SortBy) {
+   if (SortBy&SortByX) {
+      SortedCtx = Ctx;
+      qsort(Ctx->AtrNum, Ctx->Atrs, sizeof *Ctx->AtrNum, DiffAtr);
+      SortContextAtr(Ctx, Ctx->AtrNum);
    }
-   if (sort_by & CONTEXT_SORT_ROWS) {
-      qsort_context = context;
-      qsort(context->object_numbers, context->objects, sizeof *context->object_numbers, context_object_numbers_compar);
-      qsort(context->bitarray, context->objects, context->dt_count_a * sizeof *context->bitarray, context_objects_compar);
+   if (SortBy&SortByY) {
+      SortedCtx = Ctx;
+      qsort(Ctx->ObjNum, Ctx->Objs, sizeof *Ctx->ObjNum, DiffObj);
+      qsort(Ctx->Table, Ctx->Objs, Ctx->AtrN*sizeof *Ctx->Table, DiffItem);
    }
 }
 
-void remove_low_support_attribs_from_context(context_t *context, count_t min_support) {
-   count_t attribs = 0;
-   for (count_t i = 0; i < context->attributes; i++)
-      if (context->supps[i] >= min_support) attribs++;
-   context_t new_context; create_context(&new_context, context->objects, attribs);
-   int jj = DATA_BITS - 1;
-   for (count_t i = 0, ii = 0, ttotal = 0, total = 0; i < context->dt_count_a; i++) for (int j = DATA_BITS - 1; j >= 0; j--, total++) {
-      if (total >= context->attributes) goto skipout;
-      else if (context->supps[total] < min_support) continue;
-      for (count_t o = 0; o < context->objects; o++)
-         if (context->rows[o][i] & (BitU << j)) new_context.rows[o][ii] |= BitU << jj;
-      new_context.supps[ttotal] = context->supps[total];
-      new_context.table_entries += context->supps[total];
-      new_context.attrib_numbers[ttotal] = context->attrib_numbers[total];
-      ttotal++;
-      if (--jj < 0) ii++, jj = DATA_BITS - 1;
+void PruneContextAtrs(ContextT Ctx, CountT LoSup) {
+   CountT Atrs = 0;
+   for (CountT A = 0; A < Ctx->Atrs; A++)
+      if (Ctx->Sup[A] >= LoSup) Atrs++;
+   struct ContextT Context; MakeContext(&Context, Ctx->Objs, Atrs);
+   int D1 = DataN - 1;
+   for (CountT N = 0, N1 = 0, A1 = 0, A = 0; N < Ctx->AtrN; N++) for (int D = DataN - 1; D >= 0; D--, A++) {
+      if (A >= Ctx->Atrs) goto Break;
+      else if (Ctx->Sup[A] < LoSup) continue;
+      for (CountT O = 0; O < Ctx->Objs; O++)
+         if (Ctx->Row[O][N]&BitU(D)) Context.Row[O][N1] |= BitU(D1);
+      Context.Sup[A1] = Ctx->Sup[A];
+      Context.Entries += Ctx->Sup[A];
+      Context.AtrNum[A1++] = Ctx->AtrNum[A];
+      if (--D1 < 0) N1++, D1 = DataN - 1;
    }
-skipout:
-   memcpy(new_context.object_numbers, context->object_numbers, context->objects * sizeof *new_context.object_numbers);
-   destroy_context(context);
-   *context = new_context;
+Break:
+   memcpy(Context.ObjNum, Ctx->ObjNum, Ctx->Objs*sizeof *Context.ObjNum);
+   FreeContext(Ctx), *Ctx = Context;
 }
 
-void transpose_context(context_t *context) {
-   context_t new_context; create_context(&new_context, context->attributes, context->objects);
-   for (count_t i = 0, total = 0; i < context->dt_count_a; i++) for (int j = DATA_BITS - 1; j >= 0; j--, total++) {
-      if (total >= context->attributes) goto skipout;
-      for (count_t o = 0; o < context->objects; o++)
-         if (context->rows[o][i] & (BitU << j)) {
-            new_context.rows[total][o / DATA_BITS] |= BitU << (DATA_BITS - 1 - o % DATA_BITS);
-            new_context.supps[o]++;
-         }
+void FlipContext(ContextT Ctx) {
+   struct ContextT Context; MakeContext(&Context, Ctx->Atrs, Ctx->Objs);
+   for (CountT N = 0, A = 0; N < Ctx->AtrN; N++) for (int D = DataN - 1; D >= 0; D--, A++) {
+      if (A >= Ctx->Atrs) goto Break;
+      for (CountT O = 0; O < Ctx->Objs; O++)
+         if (Ctx->Row[O][N]&BitU(D)) Context.Row[A][O/DataN] |= BitU(DataN - 1 - O%DataN), Context.Sup[O]++;
    }
-skipout:
-   memcpy(new_context.object_numbers, context->attrib_numbers, context->attributes * sizeof *new_context.object_numbers);
-   memcpy(new_context.attrib_numbers, context->object_numbers, context->objects * sizeof *new_context.attrib_numbers);
-   destroy_context(context);
-   *context = new_context;
+Break:
+   memcpy(Context.ObjNum, Ctx->AtrNum, Ctx->Atrs*sizeof *Context.ObjNum);
+   memcpy(Context.AtrNum, Ctx->ObjNum, Ctx->Objs*sizeof *Context.AtrNum);
+   FreeContext(Ctx), *Ctx = Context;
 }
 
-void compute_ess_context(context_t *ess_context, context_t *context) {
-   copy_context(ess_context, context);
-   context_t transp_context; copy_context(&transp_context, context);
-   transpose_context(&transp_context);
-   context_t transp_ess_context; copy_context(&transp_ess_context, &transp_context);
-   context_t *tmp_context = context, *tmp_ess_context = ess_context;
-   for (int n = 0; n < 2; n++) {
-      for (count_t o = 0; o < tmp_context->objects; o++) for (count_t p = o + 1; p < tmp_context->objects; p++) {
-         bool geq = true, leq = true;
-         for (count_t i = 0; (geq || leq) && i < tmp_context->dt_count_a; i++) {
-            if (geq && (~tmp_context->rows[o][i] & tmp_context->rows[p][i])) geq = false;
-            if (leq && (tmp_context->rows[o][i] & ~tmp_context->rows[p][i])) leq = false;
-         }
-         if (geq > leq)
-            for (count_t i = 0; i < tmp_context->dt_count_a; i++) tmp_ess_context->rows[o][i] &= ~tmp_context->rows[p][i];
-	 else if (leq > geq)
-            for (count_t i = 0; i < tmp_context->dt_count_a; i++) tmp_ess_context->rows[p][i] &= ~tmp_context->rows[o][i];
+void MakeEssContext(ContextT EssCtx, ContextT Ctx) {
+   CopyContext(EssCtx, Ctx);
+   struct ContextT Context; CopyContext(&Context, Ctx), FlipContext(&Context);
+   struct ContextT EssContext; CopyContext(&EssContext, &Context);
+   ContextT CurCtx = Ctx, CurEssCtx = EssCtx;
+   for (int N = 0; N < 2; N++) {
+      for (CountT O0 = 0; O0 < CurCtx->Objs; O0++) for (CountT O1 = O0 + 1; O1 < CurCtx->Objs; O1++) {
+         bool IsLt = false, IsGt = false;
+         for (CountT A = 0; (!IsLt || !IsGt) && A < CurCtx->AtrN; A++)
+            IsLt = IsLt || (~CurCtx->Row[O0][A]&CurCtx->Row[O1][A]),
+            IsGt = IsGt || (CurCtx->Row[O0][A]&~CurCtx->Row[O1][A]);
+         if (IsGt > IsLt)
+            for (CountT A = 0; A < CurCtx->AtrN; A++) CurEssCtx->Row[O0][A] &= ~CurCtx->Row[O1][A];
+         else if (IsLt > IsGt)
+            for (CountT A = 0; A < CurCtx->AtrN; A++) CurEssCtx->Row[O1][A] &= ~CurCtx->Row[O0][A];
       }
-      tmp_context = &transp_context, tmp_ess_context = &transp_ess_context;
+      CurCtx = &Context, CurEssCtx = &EssContext;
    }
-   destroy_context(&transp_context);
-   transpose_context(&transp_ess_context);
-   memset(ess_context->supps, 0, context->attributes * sizeof *ess_context->supps);
-   ess_context->table_entries = 0;
-   for (count_t o = 0; o < context->objects; o++) {
-      for (count_t i = 0, total = 0; i < context->dt_count_a; i++) {
-         ess_context->rows[o][i] &= transp_ess_context.rows[o][i];
-         for (int j = DATA_BITS - 1; j >= 0; j--, total++) {
-            if (total >= context->attributes) goto skipout;
-            if (ess_context->rows[o][i] & (BitU << j)) ess_context->supps[total]++, ess_context->table_entries++;
+   FreeContext(&Context);
+   FlipContext(&EssContext);
+   memset(EssCtx->Sup, 0, Ctx->Atrs*sizeof *EssCtx->Sup);
+   EssCtx->Entries = 0;
+   for (CountT O = 0; O < Ctx->Objs; O++) {
+      for (CountT N = 0, A = 0; N < Ctx->AtrN; N++) {
+         EssCtx->Row[O][N] &= EssContext.Row[O][N];
+         for (int D = DataN - 1; D >= 0; D--, A++) {
+            if (A >= Ctx->Atrs) goto Break;
+            if (EssCtx->Row[O][N]&BitU(D)) EssCtx->Sup[A]++, EssCtx->Entries++;
          }
       }
-   skipout:
-      ;
+   Break: ;
    }
-   destroy_context(&transp_ess_context);
+   FreeContext(&EssContext);
 }
 
-void _transform_objects_to_context(data_t **objects, data_t **from_objects, context_t *context, context_t *from_context) {
-   *objects = NULL;
-   for (count_t o = (count_t)*from_objects++; o > 0; from_objects++, o--)
-      if ((*from_objects - *from_context->rows) / from_context->dt_count_a < context->objects) {
-         *objects = (data_t *)((count_t)*objects + 1);
-         objects[(count_t)*objects] = context->rows[(*from_objects - *from_context->rows) / from_context->dt_count_a];
-      }
+void ObjToContext(DataT **ObjsP, DataT **DeObj, ContextT Ctx, ContextT DeCtx) {
+   *ObjsP = NULL;
+   for (CountT O = (CountT)*DeObj++; O > 0; DeObj++, O--)
+      if ((*DeObj - *DeCtx->Row)/DeCtx->AtrN < Ctx->Objs)
+         *ObjsP = (DataT *)((CountT)*ObjsP + 1),
+         ObjsP[(CountT)*ObjsP] = Ctx->Row[(*DeObj - *DeCtx->Row)/DeCtx->AtrN];
 }
 
-count_t compute_table_entries_percent(count_t table_entries, int percent) {
-   return ((percent / 10) * table_entries / 10 + (percent % 10) * table_entries / 100);
-}
+CountT TableEntriesPercent(CountT Entries, int Percent) { return Percent/10*Entries/10 + Percent%10*Entries/100; }
 
 // Formal concept and concepts.
+typedef enum { NewCP = 1 << 0, AtrOnlyCP = 1 << 1, ObjOnlyCP = 1 << 2 } ConceptFlagT;
+typedef struct ConceptList { DataT *Beg, *Cur, *End; } *ConceptList;
+typedef void (*SaveConceptOpT)(DataT *In, DataT **Ex, ContextT Ctx, IoT X, ConceptFlagT Flags);
+typedef void (*InfoConceptOpT)(DataT *In, DataT **Ex, ContextT Ctx, ConceptFlagT Flags);
+
+typedef struct ConceptT {
+   CountT LoSup;
+   SaveConceptOpT SaveOp;
+   IoT SaveArg;
+   InfoConceptOpT InfoOp;
+   ConceptFlagT Flags;
+} *ConceptT;
+
+void ClosurePlusAtr(DataT *In, DataT **Ex, DataT **ExEx, DataT *ExIn, ContextT Ctx, CountT AtrData, DataT AtrMask, CountT LoSup) {
 #ifdef STATS
-enum { CONCEPTS = 0, CLOSURES, FAIL_SUPPORT, NEXT_CONCEPTS_COUNTER };
+   Closures++;
 #endif
-
-typedef enum {
-   CONCEPT_NEW = 1, CONCEPT_MODIFIED = 1 << 1, CONCEPT_LOWER = 1 << 2,
-   CONCEPT_UPPER = 1 << 3, CONCEPT_HELP = 1 << 4,
-   CONCEPT_SAVE_ATTRIBS_ONLY = 1 << 8, CONCEPT_SAVE_OBJECTS_ONLY = 1 << 9
-} concept_flags_t;
-
-typedef struct {
-   data_t *start;
-   data_t *iter;
-   data_t *end;
-} concept_list_t;
-
-typedef void (concept_save_func_t)(data_t *intent, data_t **extent, context_t *context, void *data, concept_flags_t flags);
-typedef void (concept_info_func_t)(data_t *intent, data_t **extent, context_t *context, concept_flags_t flags STATS_DATA_PARAM);
-
-typedef struct {
-   count_t min_support;
-   concept_save_func_t *save_func;
-   void *save_data;
-   concept_info_func_t *info_func;
-   concept_flags_t flags;
-} concepts_t;
-
-#define CONCEPTS_INITIALIZER {0, NULL, NULL, NULL, 0}
-
-#define SAVE_CONCEPT(_intent, _extent, _context, _concepts, _flags) { \
-   if ((_concepts)->save_func != NULL || (_concepts)->info_func != NULL) { \
-      if ((_concepts)->save_func != NULL) (_concepts)->save_func(_intent, _extent, _context, (_concepts)->save_data, (_concepts)->flags | _flags); \
-      if ((_concepts)->info_func != NULL) (_concepts)->info_func(_intent, _extent, _context, (_concepts)->flags | _flags STATS_DATA_ARG); \
-   } \
-}
-
-void compute_closure_from_attrs(data_t *intent, data_t **extent, data_t *attrs, context_t *context);
-void compute_closure_from_objects(data_t *intent, data_t **extent, data_t **objects, context_t *context);
-
-data_t upto_bit[DATA_BITS];
-
-void init_concepts(concepts_t *concepts, count_t min_support, concept_save_func_t *save_func, void *save_data, concept_info_func_t *info_func, concept_flags_t flags) {
-   concepts->min_support = min_support;
-   concepts->save_func = save_func;
-   concepts->save_data = save_data;
-   concepts->info_func = info_func;
-   concepts->flags = flags;
-}
-
-void free_concepts(concepts_t *concepts) { }
-
-void compute_closure_plus_attr(data_t *intent, data_t **extent, data_t **prev_extent, data_t *prev_intent, context_t *context, count_t attr_dt, data_t attr_mask, count_t min_support) {
-   data_t data = 0;
-   memset(intent, 0xff, DT_SIZE_A);
-   if (prev_extent != NULL) {
-      for (count_t i = (count_t)*prev_extent++, o = i; o > 0; prev_extent++, o--) {
-         if ((*prev_extent)[attr_dt] & attr_mask) extent[(count_t)++data] = *prev_extent;
-         else if (--i < min_support) {
-            *extent = (data_t *)data;
-            return;
-         }
-      }
-      *extent = (data_t *)data;
-      for (count_t i = 0; i < context->dt_count_a; i++, intent++) {
-         data = *intent;
-         if (data != 0 && (prev_intent[i] ^ AllU)) for (count_t o = (count_t)*extent; data && o; o--) data &= extent[o][i];
-         *intent = data;
+   DataT Data = 0;
+   memset(In, 0xff, DataA);
+   if (ExEx != NULL) {
+      for (CountT O1 = (CountT)*ExEx++, O = O1; O > 0; ExEx++, O--)
+         if ((*ExEx)[AtrData]&AtrMask) Ex[(CountT)++Data] = *ExEx;
+         else if (--O1 < LoSup) { *Ex = (DataT *)Data; return; }
+      *Ex = (DataT *)Data;
+      for (CountT A = 0; A < Ctx->AtrN; A++, In++) {
+         Data = *In;
+         if (Data != 0 && (ExIn[A] ^ AllU)) for (CountT O = (CountT)*Ex; Data && O > 0; O--) Data &= Ex[O][A];
+         *In = Data;
       }
    } else {
-      *extent = (data_t *)context->objects;
-      for (count_t o = 0; o < context->objects; o++) {
-         extent[o + 1] = context->rows[o];
-         for (count_t i = 0; i < context->dt_count_a; i++) intent[i] &= context->rows[o][i];
+      *Ex = (DataT *)Ctx->Objs;
+      for (CountT O = 0; O < Ctx->Objs; O++) {
+         Ex[O + 1] = Ctx->Row[O];
+         for (CountT A = 0; A < Ctx->AtrN; A++) In[A] &= Ctx->Row[O][A];
       }
    }
 }
 
-void compute_extent_from_attrs(data_t **extent, data_t *attrs, context_t *context) {
-   data_t data = 0;
-   for (count_t o = 0; o < context->objects; o++) {
-      for (count_t i = 0; i < context->dt_count_a; i++)
-         if (attrs[i] & ~(context->rows[o][i])) goto skip;
-      extent[(count_t)++data] = context->rows[o];
-   skip:
-      ;
+void AtrToEx(DataT **Ex, DataT *Atr, ContextT Ctx) {
+   DataT Data = 0;
+   for (CountT O = 0; O < Ctx->Objs; O++) {
+      for (CountT A = 0; A < Ctx->AtrN; A++)
+         if (Atr[A]&~(Ctx->Row[O][A])) goto Continue;
+      Ex[(CountT)++Data] = Ctx->Row[O];
+   Continue: ;
    }
-   *extent = (data_t *)data;
+   *Ex = (DataT *)Data;
 }
 
-void compute_intent_from_objects(data_t *intent, data_t **objects, context_t *context) {
-   memset(intent, 0xff, DT_SIZE_A);
-   for (count_t i = 0; i < context->dt_count_a; i++, intent++) {
-      data_t data = *intent;
-      if (data != 0)
-         for (count_t o = (count_t)*objects; data && o; o--) data &= objects[o][i];
-      *intent = data;
+void ObjToIn(DataT *In, DataT **Objs, ContextT Ctx) {
+   memset(In, 0xff, DataA);
+   for (CountT A = 0; A < Ctx->AtrN; A++, In++) {
+      DataT Data = *In;
+      if (Data != 0)
+         for (CountT O = (CountT)*Objs; Data && O > 0; O--) Data &= Objs[O][A];
+      *In = Data;
    }
 }
 
-__inline void compute_closure_from_attrs(data_t *intent, data_t **extent, data_t *attrs, context_t *context) {
-   compute_extent_from_attrs(extent, attrs, context);
-   compute_intent_from_objects(intent, extent, context);
+static inline void ClosureFromAtr(DataT *In, DataT **Ex, DataT *Atrs, ContextT Ctx) {
+#ifdef STATS
+   Closures++;
+#endif
+   AtrToEx(Ex, Atrs, Ctx), ObjToIn(In, Ex, Ctx);
 }
 
-__inline void compute_closure_from_objects(data_t *intent, data_t **extent, data_t **objects, context_t *context) {
-   compute_intent_from_objects(intent, objects, context);
-   compute_extent_from_attrs(extent, intent, context);
+static inline void ClosureFromObj(DataT *In, DataT **Ex, DataT **Objs, ContextT Ctx) {
+#ifdef STATS
+   Closures++;
+#endif
+   ObjToIn(In, Objs, Ctx), AtrToEx(Ex, In, Ctx);
 }
 
-void compute_attribute_concepts(data_t *intents, context_t *context, count_t min_support STATS_DATA_PARAM) {
-   data_t *intent_largest = malloc(DT_SIZE_A + DT_SIZE_O);
-   data_t **extent_largest = (data_t **)(intent_largest + context->dt_count_a);
-   compute_closure_plus_attr(intent_largest, extent_largest, NULL, NULL, context, 0, 0, min_support);
-   INC_COUNTER(CLOSURES);
-   data_t *intent = intents;
-   data_t **extent = (data_t **)(intent + context->dt_count_a);
-   for (count_t j = 0, total = 0; j < context->dt_count_a; j++) for (int i = DATA_BITS - 1; i >= 0; i--) {
-      if (total >= context->attributes) return;
-      compute_closure_plus_attr(intent, extent, extent_largest, intent_largest, context, j, BitU << i, min_support);
-      INC_COUNTER(CLOSURES);
-      intent = (data_t *)(extent + context->objects + 1);
-      extent = (data_t **)(intent + context->dt_count_a);
-      total++;
+void AtrConcepts(DataT *In, ContextT Ctx, CountT LoSup) {
+   DataT *MaxIn = malloc(DataA + DataO);
+   DataT **MaxEx = (DataT **)(MaxIn + Ctx->AtrN);
+   ClosurePlusAtr(MaxIn, MaxEx, NULL, NULL, Ctx, 0, 0, LoSup);
+   DataT **Ex = (DataT **)(In + Ctx->AtrN);
+   for (CountT N = 0, A = 0; N < Ctx->AtrN; N++) for (int D = DataN - 1; D >= 0; A++, D--) {
+      if (A >= Ctx->Atrs) goto Break;
+      ClosurePlusAtr(In, Ex, MaxEx, MaxIn, Ctx, N, BitU(D), LoSup);
+      In = (DataT *)(Ex + Ctx->Objs + 1), Ex = (DataT **)(In + Ctx->AtrN);
    }
-   free(intent_largest);
+Break:
+   free(MaxIn);
 }
 
-void output_attributes_to_io(data_t *set, context_t *context, io_t *io) {
-   for (count_t j = 0, c = 0; j < context->dt_count_a; j++) for (data_t i = BitU << (DATA_BITS - 1); i; i >>= 1) {
-      if (set[j] & i) IO_WRITE(io, context->attrib_numbers[c]);
-      if (++c >= context->attributes) goto out;
+void AtrsToIO(DataT *Set, ContextT Ctx, IoT Io) {
+   for (CountT N = 0, A = 0; N < Ctx->AtrN; N++) for (DataT D = BitU(DataN - 1); D; D >>= 1) {
+      if (Set[N]&D) PutIO(Io, Ctx->AtrNum[A]);
+      if (++A >= Ctx->Atrs) goto Break;
    }
-out:;
+Break: ;
 }
 
-void output_objects_to_io(data_t **set, context_t *context, io_t *io) {
-   for (count_t o = (count_t)*set++; o > 0; set++, o--) IO_WRITE(io, context->object_numbers[(count_t)(*set - *context->rows) / context->dt_count_a]);
+void ObjsToIO(DataT **Set, ContextT Ctx, IoT Io) {
+   for (CountT O = (CountT)*Set++; O > 0; Set++, O--) PutIO(Io, Ctx->ObjNum[(CountT)(*Set - *Ctx->Row)/Ctx->AtrN]);
 }
 
-void save_concept_to_list(data_t *intent, data_t **extent, context_t *context, concept_list_t *list, concept_flags_t flags) {
-   if (list->iter + context->dt_count_a + (count_t)*extent + 1 > list->end) {
-      count_t length = list->iter - list->start;
-      list->start = realloc(list->start, (length << 1) * sizeof *list->start);
-      list->iter = list->start + length;
-      list->end = list->start + (length << 1);
+void ListConcepts(DataT *In, DataT **Ex, ContextT Ctx, ConceptList List, ConceptFlagT Flags) {
+   if (List->Cur + Ctx->AtrN + (CountT)*Ex + 1 > List->End) {
+      CountT Length = List->Cur - List->Beg;
+      List->Beg = realloc(List->Beg, (Length << 1)*sizeof *List->Beg);
+      List->Cur = List->Beg + Length;
+      List->End = List->Beg + (Length << 1);
    }
-   if (!(flags & CONCEPT_SAVE_OBJECTS_ONLY))
-      memcpy(list->iter, intent, DT_SIZE_A), list->iter += context->dt_count_a;
-   if (!(flags & CONCEPT_SAVE_ATTRIBS_ONLY))
-      memcpy(list->iter, extent, DT_SIZE_Ox((count_t)*extent)), list->iter += (count_t)*extent + 1;
+   if (!(Flags&ObjOnlyCP)) memcpy(List->Cur, In, DataA), List->Cur += Ctx->AtrN;
+   if (!(Flags&AtrOnlyCP)) memcpy(List->Cur, Ex, DataOx((CountT)*Ex)), List->Cur += (CountT)*Ex + 1;
 }
 
 // Boolean factors as formal concepts.
-#ifdef STATS
-enum { FACTORS = 0, UNCOVERED = 2, OVERCOVERED, NEXT_FACTORS_COUNTER };
-#endif
-
-typedef struct {
-   int threshold;
-   concepts_t concepts;
-} factors_t;
-
-void init_factors(factors_t *factors, int threshold) { factors->threshold = threshold; }
-
-void compute_closure_masked_size(data_t *intent, data_t **extent, context_t *context, context_t *mask_context, count_t *size, count_t *over_size) {
-   *size = 0;
-   if (over_size != NULL) *over_size = 0;
-   for (count_t o = (count_t)*extent++; o > 0; extent++, o--) {
-      count_t over_count = 0, count = 0;
-      for (count_t i = 0; i < context->dt_count_a; i++) {
-         data_t cell = intent[i] & mask_context->rows[(*extent - *context->rows) / context->dt_count_a][i];
-         for (int j = 0; j < DATA_BITS && cell; cell >>= BitU, j++)
-            if (cell & BitU) {
-               if (context->rows[(*extent - *context->rows) / context->dt_count_a][i] & (BitU << j))
-                  count++;
-               else
-                  over_count++;
+void MaskedSizeClosure(DataT *In, DataT **Ex, ContextT Ctx, ContextT MaskCtx, CountT *NP, CountT *OverNP) {
+   *NP = 0;
+   if (OverNP != NULL) *OverNP = 0;
+   for (CountT O = (CountT)*Ex++; O > 0; Ex++, O--) {
+      CountT N = 0, OverN = 0;
+      for (CountT A = 0; A < Ctx->AtrN; A++) {
+         DataT Cell = In[A]&MaskCtx->Row[(*Ex - *Ctx->Row)/Ctx->AtrN][A];
+         for (int D = 0; D < DataN && Cell; Cell >>= BitU(0), D++)
+            if (Cell&BitU(0)) {
+               if (Ctx->Row[(*Ex - *Ctx->Row)/Ctx->AtrN][A]&BitU(D)) N++; else OverN++;
             }
       }
-      *size += count;
-      if (over_size != NULL) *over_size += over_count;
+      *NP += N;
+      if (OverNP != NULL) *OverNP += OverN;
    }
 }
 
-void output_factor_to_io(data_t *intent, data_t **extent, context_t *context, io_t *io, concept_flags_t flags) {
-   if (!(flags & CONCEPT_SAVE_OBJECTS_ONLY)) output_attributes_to_io(intent, context, io);
-   if (!(flags & CONCEPT_SAVE_ATTRIBS_ONLY)) {
-      if (!(flags & CONCEPT_SAVE_OBJECTS_ONLY)) IO_WRITE(io, IO_SEP_OA);
-      output_objects_to_io(extent, context, io);
+void FactorToIO(DataT *In, DataT **Ex, ContextT Ctx, IoT Io, ConceptFlagT Flags) {
+   if (!(Flags&ObjOnlyCP)) AtrsToIO(In, Ctx, Io);
+   if (!(Flags&AtrOnlyCP)) {
+      if (!(Flags&ObjOnlyCP)) PutIO(Io, SepOaIO);
+      ObjsToIO(Ex, Ctx, Io);
    }
-   IO_WRITE(io, IO_END_SET);
-   IO_FUNC(io, 0);
+   PutIO(Io, EndSetIO), OpIO(Io, 0);
 }
 
 // IterEss algorithm.
-#ifdef STATS
-enum { ESS_CONTEXTS = NEXT_FACTORS_COUNTER };
-#endif
+int EssN = 1;
 
-int ess_iters = 1;
-
-__inline void SwapIntent(data_t **AP, data_t **BP) {
-   data_t *A = *AP, *B = *BP;
+static inline void SwapIntent(DataT **AP, DataT **BP) {
+   DataT *A = *AP, *B = *BP;
    *AP = B, *BP = A;
 }
 
-__inline void SwapExtent(data_t ***AP, data_t ***BP) {
-   data_t **A = *AP, **B = *BP;
+static inline void SwapExtent(DataT ***AP, DataT ***BP) {
+   DataT **A = *AP, **B = *BP;
    *AP = B, *BP = A;
 }
 
-__inline void SwapConcepts(concept_list_t **AP, concept_list_t **BP) {
-   concept_list_t *A = *AP, *B = *BP;
+static inline void SwapConcepts(ConceptList *AP, ConceptList *BP) {
+   ConceptList A = *AP, B = *BP;
    *AP = B, *BP = A;
 }
 
-void find_factors(context_t *context, factors_t *factors STATS_DATA_PARAM) {
-   SET_COUNTER_TEXT(ESS_CONTEXTS, "Ess contexts");
-   count_t table_entries_percent = compute_table_entries_percent(context->table_entries, 100 - factors->threshold);
-   int contexts_length = 8;
-   context_t **contexts = malloc(contexts_length * sizeof *contexts);
-   *contexts = context;
-   count_t c = 0;
+void FindFactors(ContextT Ctx, int Tiny, ConceptT Cpt) {
+   CountT Percent = TableEntriesPercent(Ctx->Entries, 100 - Tiny);
+   int ContextN = 8;
+   ContextT *CtxTab = malloc(ContextN*sizeof *CtxTab);
+   *CtxTab = Ctx;
+   CountT C = 0;
    do {
-      if (++c == contexts_length) contexts_length <<= 1, contexts = realloc(contexts, contexts_length * sizeof *contexts);
-      contexts[c] = malloc(sizeof *contexts[c]);
-      compute_ess_context(contexts[c], contexts[c - 1]);
-   } while ((ess_iters == 0 || c < ess_iters) && contexts[c]->table_entries != contexts[c - 1]->table_entries);
-   if (contexts[c]->table_entries == contexts[c - 1]->table_entries && c > 1) c--;
-   count_t last_c = c;
-   SAVE_TIME("Ess contexts time");
-   SET_COUNTER(ESS_CONTEXTS, last_c);
-   struct { data_t *start, *iter; } attribute_intents;
-   attribute_intents.start = attribute_intents.iter = malloc((DT_SIZE_A + DT_SIZE_O) * (context->attributes + 12) + DT_SIZE_O);
-   data_t *intent = (data_t *)(attribute_intents.start + (context->dt_count_a + context->objects + 1) * context->attributes);
-   data_t **extent = (data_t **)(intent + context->dt_count_a);
-   data_t *new_intent = (data_t *)(extent + context->objects + 1);
-   data_t **new_extent = (data_t **)(new_intent + context->dt_count_a);
-   data_t *best_intent = (data_t *)(new_extent + context->objects + 1);
-   data_t **best_extent = (data_t **)(best_intent + context->dt_count_a);
-   data_t *intent_parent_intent = (data_t *)(best_extent + context->objects + 1);
-   data_t **intent_parent_extent = (data_t **)(intent_parent_intent + context->dt_count_a);
-   data_t *intent_new_parent_intent = (data_t *)(intent_parent_extent + context->objects + 1);
-   data_t **intent_new_parent_extent = (data_t **)(intent_new_parent_intent + context->dt_count_a);
-   data_t *intent_best_parent_intent = (data_t *)(intent_new_parent_extent + context->objects + 1);
-   data_t **intent_best_parent_extent = (data_t **)(intent_best_parent_intent + context->dt_count_a);
-   data_t *extent_parent_intent = (data_t *)(intent_best_parent_extent + context->objects + 1);
-   data_t **extent_parent_extent = (data_t **)(extent_parent_intent + context->dt_count_a);
-   data_t *extent_new_parent_intent = (data_t *)(extent_parent_extent + context->objects + 1);
-   data_t **extent_new_parent_extent = (data_t **)(extent_new_parent_intent + context->dt_count_a);
-   data_t *extent_best_parent_intent = (data_t *)(extent_new_parent_extent + context->objects + 1);
-   data_t **extent_best_parent_extent = (data_t **)(extent_best_parent_intent + context->dt_count_a);
-   data_t *factor_intent = (data_t *)(extent_best_parent_extent + context->objects + 1);
-   data_t **factor_extent = (data_t **)(factor_intent + context->dt_count_a);
-   data_t *intent_factor_parent_intent = (data_t *)(factor_extent + context->objects + 1);
-   data_t **intent_factor_parent_extent = (data_t **)(intent_factor_parent_intent + context->dt_count_a);
-   data_t *extent_factor_parent_intent = (data_t *)(intent_factor_parent_extent + context->objects + 1);
-   data_t **extent_factor_parent_extent = (data_t **)(extent_factor_parent_intent + context->dt_count_a);
-   data_t **objects = (data_t **)(extent_factor_parent_extent + context->objects + 1);
-   concept_list_t _factor_concepts[2];
-   concept_list_t *factor_concepts = _factor_concepts;
-   factor_concepts->iter = factor_concepts->start = malloc(DT_SIZE_A + DT_SIZE_O);
-   factor_concepts->end = factor_concepts->start + context->dt_count_a + context->objects + 1;
-   compute_closure_plus_attr(factor_concepts->start, (data_t **)(factor_concepts->start + context->dt_count_a), NULL, NULL, context, 0, 0, factors->concepts.min_support);
-   memset(factor_concepts->start, 0xff, DT_SIZE_A);
-   factor_concepts->start[context->dt_count_a - 1] &= ~BitU;
-   concept_list_t *new_factor_concepts = _factor_concepts + 1;
-   new_factor_concepts->iter = new_factor_concepts->start = malloc((DT_SIZE_A + DT_SIZE_O) * context->attributes);
-   new_factor_concepts->end = new_factor_concepts->start + (context->dt_count_a + context->objects + 1) * context->attributes;
-   SET_COUNTER(FACTORS, 0);
-   SET_COUNTER(UNCOVERED, context->table_entries);
-   count_t new_size;
-   data_t *factor_concept = NULL;
-   while (c >= 0) {
-      if (c == 0) SAVE_TIME("Ess factors time");
-      context_t new_context; copy_context(&new_context, contexts[c]);
-      if (c == last_c) compute_attribute_concepts(attribute_intents.start, contexts[c], factors->concepts.min_support STATS_DATA_ARG);
-      else {
-         compute_closure_plus_attr(attribute_intents.start, (data_t **)(attribute_intents.start + context->dt_count_a), NULL, NULL, contexts[c], 0, 0, factors->concepts.min_support);
-         INC_COUNTER(CLOSURES);
-      }
+      if (++C == ContextN) ContextN <<= 1, CtxTab = realloc(CtxTab, ContextN*sizeof *CtxTab);
+      CtxTab[C] = malloc(sizeof *CtxTab[C]);
+      MakeEssContext(CtxTab[C], CtxTab[C - 1]);
+   } while ((EssN == 0 || C < EssN) && CtxTab[C]->Entries != CtxTab[C - 1]->Entries);
+   if (CtxTab[C]->Entries == CtxTab[C - 1]->Entries && C > 1) C--;
+   CountT ExC = C;
+#ifdef STATS
+   SaveTime("Ess contexts time");
+   EssContexts = ExC;
+#endif
+   DataT *AtrInBeg = malloc((DataA + DataO)*(Ctx->Atrs + 12) + DataO), *AtrInCur = AtrInBeg;
+   DataT *In = (DataT *)(AtrInBeg + (Ctx->AtrN + Ctx->Objs + 1)*Ctx->Atrs), **Ex = (DataT **)(In + Ctx->AtrN);
+   DataT *NewIn = (DataT *)(Ex + Ctx->Objs + 1), **NewEx = (DataT **)(NewIn + Ctx->AtrN);
+   DataT *OptIn = (DataT *)(NewEx + Ctx->Objs + 1), **OptEx = (DataT **)(OptIn + Ctx->AtrN);
+   DataT *InIn = (DataT *)(OptEx + Ctx->Objs + 1), **InEx = (DataT **)(InIn + Ctx->AtrN);
+   DataT *NewInIn = (DataT *)(InEx + Ctx->Objs + 1), **NewInEx = (DataT **)(NewInIn + Ctx->AtrN);
+   DataT *OptInIn = (DataT *)(NewInEx + Ctx->Objs + 1), **OptInEx = (DataT **)(OptInIn + Ctx->AtrN);
+   DataT *ExIn = (DataT *)(OptInEx + Ctx->Objs + 1), **ExEx = (DataT **)(ExIn + Ctx->AtrN);
+   DataT *NewExIn = (DataT *)(ExEx + Ctx->Objs + 1), **NewExEx = (DataT **)(NewExIn + Ctx->AtrN);
+   DataT *OptExIn = (DataT *)(NewExEx + Ctx->Objs + 1), **OptExEx = (DataT **)(OptExIn + Ctx->AtrN);
+   DataT *FacIn = (DataT *)(OptExEx + Ctx->Objs + 1), **FacEx = (DataT **)(FacIn + Ctx->AtrN);
+   DataT *FacInIn = (DataT *)(FacEx + Ctx->Objs + 1), **FacInEx = (DataT **)(FacInIn + Ctx->AtrN);
+   DataT *FacExIn = (DataT *)(FacInEx + Ctx->Objs + 1), **FacExEx = (DataT **)(FacExIn + Ctx->AtrN);
+   DataT **ObjTab = (DataT **)(FacExEx + Ctx->Objs + 1);
+   struct ConceptList ConceptsPair[2];
+   ConceptList FacCpt = &ConceptsPair[0];
+   FacCpt->Cur = FacCpt->Beg = malloc(DataA + DataO);
+   FacCpt->End = FacCpt->Beg + Ctx->AtrN + Ctx->Objs + 1;
+//(@) Closures++; was not executed with this, in the original.
+   ClosurePlusAtr(FacCpt->Beg, (DataT **)(FacCpt->Beg + Ctx->AtrN), NULL, NULL, Ctx, 0, 0, Cpt->LoSup);
+   memset(FacCpt->Beg, 0xff, DataA);
+   FacCpt->Beg[Ctx->AtrN - 1] &= ~BitU(0);
+   ConceptList NewCpt = &ConceptsPair[1];
+   NewCpt->Cur = NewCpt->Beg = malloc((DataA + DataO)*Ctx->Atrs);
+   NewCpt->End = NewCpt->Beg + (Ctx->AtrN + Ctx->Objs + 1)*Ctx->Atrs;
+#ifdef STATS
+   Factors = 0, UnCovered = Ctx->Entries;
+#endif
+   DataT *FactorConcept = NULL;
+   for (; C >= 0; C--) {
+      if (C == 0) SaveTime("Ess factors time");
+      struct ContextT NewContext; CopyContext(&NewContext, CtxTab[C]);
+      if (C == ExC)
+         AtrConcepts(AtrInBeg, CtxTab[C], Cpt->LoSup);
+      else
+         ClosurePlusAtr(AtrInBeg, (DataT **)(AtrInBeg + Ctx->AtrN), NULL, NULL, CtxTab[C], 0, 0, Cpt->LoSup);
       while (true) {
-         count_t factor_size = 0;
-         data_t **factor_concepts_extent;
-         for (factor_concepts->iter = factor_concepts->start; factor_concepts->iter < factor_concepts->end; factor_concepts->iter = (data_t *)(factor_concepts_extent + (count_t)*factor_concepts_extent + 1)) {
-            factor_concepts_extent = (data_t **)(factor_concepts->iter + context->dt_count_a);
-            if (c == last_c) memset(intent, 0, DT_SIZE_A + DT_SIZE_O);
-            else {
-               if (factor_concepts->iter[context->dt_count_a - 1] & BitU) continue;
-               memcpy(intent, attribute_intents.start, DT_SIZE_A);
-               memcpy(extent, (data_t *)factor_concepts_extent, DT_SIZE_Ox((count_t)*factor_concepts_extent));
-            }
-            count_t size = 0, best_size = size;
-            attribute_intents.iter = attribute_intents.start;
+         CountT FactorN = 0;
+         DataT **FacCptEx;
+         for (FacCpt->Cur = FacCpt->Beg; FacCpt->Cur < FacCpt->End; FacCpt->Cur = (DataT *)(FacCptEx + (CountT)*FacCptEx + 1)) {
+            FacCptEx = (DataT **)(FacCpt->Cur + Ctx->AtrN);
+            if (C == ExC) memset(In, 0, DataA + DataO);
+            else if (FacCpt->Cur[Ctx->AtrN - 1]&BitU(0)) continue;
+            else memcpy(In, AtrInBeg, DataA), memcpy(Ex, (DataT *)FacCptEx, DataOx((CountT)*FacCptEx));
+            CountT F = 0, OptF = F;
+            AtrInCur = AtrInBeg;
             while (true) {
-               for (count_t j = 0, total = 0; j < context->dt_count_a; j++) for (int i = DATA_BITS - 1; i >= 0; i--) {
-                  if (total >= context->attributes) goto skipout;
-                  if (intent[j] & (BitU << i)) goto skip;
-                  if (!(factor_concepts->iter[j] & (BitU << i))) goto skip;
-                  if (size == 0 && c == last_c) {
-                     memcpy(new_intent, attribute_intents.iter, DT_SIZE_A + DT_SIZE_O);
-                     attribute_intents.iter += context->dt_count_a + context->objects + 1;
-                  } else {
-                     compute_closure_plus_attr(new_intent, new_extent, extent, intent, contexts[c], j, BitU << i, factors->concepts.min_support);
-                     INC_COUNTER(CLOSURES);
+               for (CountT N = 0, A = 0; N < Ctx->AtrN; N++) for (int D = DataN - 1; D >= 0; A++, D--) {
+                  if (A >= Ctx->Atrs) goto Break;
+                  else if ((In[N] | ~FacCpt->Cur[N])&BitU(D)) continue;
+                  if (F == 0 && C == ExC)
+                     memcpy(NewIn, AtrInCur, DataA + DataO), AtrInCur += Ctx->AtrN + Ctx->Objs + 1;
+                  else
+                     ClosurePlusAtr(NewIn, NewEx, Ex, In, CtxTab[C], N, BitU(D), Cpt->LoSup);
+                  CountT NewF;
+                  if (C > 0) {
+                     ClosureFromAtr(NewInIn, NewInEx, NewIn, CtxTab[C - 1]);
+                     ObjToContext(ObjTab, NewEx, CtxTab[C - 1], CtxTab[C]);
+                     ClosureFromObj(NewExIn, NewExEx, ObjTab, CtxTab[C - 1]);
+                     MaskedSizeClosure(NewInIn, NewExEx, CtxTab[C - 1], &NewContext, &NewF, NULL);
+                  } else MaskedSizeClosure(NewIn, NewEx, Ctx, &NewContext, &NewF, NULL);
+                  if (NewF > OptF) {
+                     OptF = NewF;
+                     SwapIntent(&NewIn, &OptIn), SwapExtent(&NewEx, &OptEx);
+                     if (C > 0)
+                        SwapIntent(&NewInIn, &OptInIn), SwapExtent(&NewInEx, &OptInEx),
+                        SwapIntent(&NewExIn, &OptExIn), SwapExtent(&NewExEx, &OptExEx);
                   }
-                  if (c != 0) {
-                     compute_closure_from_attrs(intent_new_parent_intent, intent_new_parent_extent, new_intent, contexts[c - 1]);
-                     INC_COUNTER(CLOSURES);
-                     _transform_objects_to_context(objects, new_extent, contexts[c - 1], contexts[c]);
-                     compute_closure_from_objects(extent_new_parent_intent, extent_new_parent_extent, objects, contexts[c - 1]);
-                     INC_COUNTER(CLOSURES);
-                     compute_closure_masked_size(intent_new_parent_intent, extent_new_parent_extent, contexts[c - 1], &new_context, &new_size, NULL);
-                  } else compute_closure_masked_size(new_intent, new_extent, context, &new_context, &new_size, NULL);
-                  if (new_size > best_size) {
-                     best_size = new_size;
-                     SwapIntent(&new_intent, &best_intent);
-                     SwapExtent(&new_extent, &best_extent);
-                     if (c != 0) {
-                        SwapIntent(&intent_new_parent_intent, &intent_best_parent_intent);
-                        SwapExtent(&intent_new_parent_extent, &intent_best_parent_extent);
-                        SwapIntent(&extent_new_parent_intent, &extent_best_parent_intent);
-                        SwapExtent(&extent_new_parent_extent, &extent_best_parent_extent);
-                     }
-                  }
-               skip:
-                  total++;
                }
-            skipout:
-               if (best_size > size) {
-                  size = best_size;
-                  SwapIntent(&intent, &best_intent);
-                  SwapExtent(&extent, &best_extent);
-                  if (c != 0) {
-                     SwapIntent(&intent_parent_intent, &intent_best_parent_intent);
-                     SwapExtent(&intent_parent_extent, &intent_best_parent_extent);
-                     SwapIntent(&extent_parent_intent, &extent_best_parent_intent);
-                     SwapExtent(&extent_parent_extent, &extent_best_parent_extent);
-                  }
+            Break:
+               if (OptF > F) {
+                  F = OptF;
+                  SwapIntent(&In, &OptIn), SwapExtent(&Ex, &OptEx);
+                  if (C > 0)
+                     SwapIntent(&InIn, &OptInIn), SwapExtent(&InEx, &OptInEx),
+                     SwapIntent(&ExIn, &OptExIn), SwapExtent(&ExEx, &OptExEx);
                } else break;
             }
-            if (size > factor_size) {
-               factor_size = size;
-               SwapIntent(&factor_intent, &intent);
-               SwapExtent(&factor_extent, &extent);
-               if (c != 0) {
-                  SwapIntent(&intent_factor_parent_intent, &intent_parent_intent);
-                  SwapExtent(&intent_factor_parent_extent, &intent_parent_extent);
-                  SwapIntent(&extent_factor_parent_intent, &extent_parent_intent);
-                  SwapExtent(&extent_factor_parent_extent, &extent_parent_extent);
-               }
-               factor_concept = factor_concepts->iter;
+            if (F > FactorN) {
+               FactorN = F;
+               SwapIntent(&FacIn, &In), SwapExtent(&FacEx, &Ex);
+               if (C > 0)
+                  SwapIntent(&FacInIn, &InIn), SwapExtent(&FacInEx, &InEx),
+                  SwapIntent(&FacExIn, &ExIn), SwapExtent(&FacExEx, &ExEx);
+               FactorConcept = FacCpt->Cur;
             }
          }
-         if (factor_size == 0) break;
-         new_context.table_entries -= factor_size;
-         if (c != 0) save_concept_to_list(extent_factor_parent_intent, intent_factor_parent_extent, contexts[c - 1], new_factor_concepts, 0);
+         if (FactorN == 0) break;
+         NewContext.Entries -= FactorN;
+         if (C > 0) ListConcepts(FacExIn, FacInEx, CtxTab[C - 1], NewCpt, 0);
          else {
-            ADD_COUNTER(UNCOVERED, -factor_size);
-            SAVE_CONCEPT(factor_intent, factor_extent, context, &factors->concepts, CONCEPT_NEW);
-            INC_COUNTER(FACTORS);
+#ifdef STATS
+            UnCovered += -FactorN;
+#endif
+            if ((Cpt)->SaveOp != NULL) (Cpt)->SaveOp(FacIn, FacEx, Ctx, (Cpt)->SaveArg, (Cpt)->Flags | NewCP);
+            if ((Cpt)->InfoOp != NULL) (Cpt)->InfoOp(FacIn, FacEx, Ctx, (Cpt)->Flags | NewCP);
+#ifdef STATS
+            Factors++;
+#endif
          }
-         if (c != 0 ? new_context.table_entries == 0 : new_context.table_entries <= table_entries_percent) break;
-         if (c != last_c) factor_concept[context->dt_count_a - 1] |= BitU;
-         data_t *tmp_intent, **tmp_extent;
-         if (c != 0) {
-            tmp_intent = factor_intent, factor_intent = intent_factor_parent_intent;
-            tmp_extent = factor_extent, factor_extent = extent_factor_parent_extent;
-            context = contexts[c - 1];
+         if (C > 0? NewContext.Entries == 0: NewContext.Entries <= Percent) break;
+         if (C != ExC) FactorConcept[Ctx->AtrN - 1] |= BitU(0);
+         DataT *TmpIn, **TmpEx;
+         if (C > 0) {
+            TmpIn = FacIn, FacIn = FacInIn;
+            TmpEx = FacEx, FacEx = FacExEx;
+            Ctx = CtxTab[C - 1];
          }
-         for (count_t o = (count_t)*factor_extent; o > 0; o--) for (int i = 0; i < context->dt_count_a; i++)
-            new_context.rows[(factor_extent[o] - *context->rows) / context->dt_count_a][i] &= ~factor_intent[i];
-         if (c != 0) factor_intent = tmp_intent, factor_extent = tmp_extent, context = *contexts;
+         for (CountT O = (CountT)*FacEx; O > 0; O--) for (int N = 0; N < Ctx->AtrN; N++)
+            NewContext.Row[(FacEx[O] - *Ctx->Row)/Ctx->AtrN][N] &= ~FacIn[N];
+         if (C > 0) FacIn = TmpIn, FacEx = TmpEx, Ctx = *CtxTab;
       }
-      new_factor_concepts->end = new_factor_concepts->iter;
-      SwapConcepts(&factor_concepts, &new_factor_concepts);
-      factor_concepts->iter = factor_concepts->start;
-      new_factor_concepts->iter = new_factor_concepts->start;
-      c--;
+      NewCpt->End = NewCpt->Cur;
+      SwapConcepts(&FacCpt, &NewCpt);
+      FacCpt->Cur = FacCpt->Beg;
+      NewCpt->Cur = NewCpt->Beg;
    }
-}
-
-void find_factors_help(bool descr) {
-   if (!descr)
-      fprintf(stderr, " [-ness_iters]");
-   else
-      fprintf(stderr, "-ness_iters    maximal number of Ess context iterations, ess_iters = 0+, 0 = while changes, default 1\n\n");
-}
-
-int find_factors_process_args(int argc, char **argv) {
-   int index = 0;
-   if (argv[index][0] == '-') switch (argv[index][1]) {
-      case 'n': ess_iters = atoi(argv[index++] + 2);
-   }
-   return index;
 }
 
 // CLI prints.
-typedef enum {
-   VERBOSITY_NONE = 0, VERBOSITY_OUTPUT, VERBOSITY_STATS,
-   VERBOSITY_OUTPUT_STATS, VERBOSITY_INFO,
-   VERBOSITY_OUTPUT_INFO
-} verbosity_t;
+int Tiny = 100;
+CountT LoSup = 0;
+ConceptFlagT FactorMode = AtrOnlyCP;
+FILE *InF = NULL, *ExF = NULL;
+CountT Atr0 = 0;
 
-int threshold = 100;
-count_t min_support = 0;
-concept_flags_t factor_output = CONCEPT_SAVE_ATTRIBS_ONLY;
-context_sort_t context_sort = 0;
-verbosity_t verbosity = VERBOSITY_OUTPUT;
-FILE *input_file = NULL, *output_file = NULL;
-count_t attr_offset = 0;
+typedef enum { ExV = 1 << 0, StatV = 1 << 1, InfoV = 1 << 2 } NoiseModeT;
+NoiseModeT Noise = ExV;
 
-void print_context_info(context_t *context, char *name) {
-   fprintf(stderr, "%s objects: %li\n%s attributes: %li\n%s table entries: %li\n%s fill ratio: %.3f%%\n", name, context->objects, name, context->attributes, name, context->table_entries, name, 100.0 * context->table_entries / (context->objects * context->attributes));
+NoiseModeT CharToNoiseMode(char Ch) {
+   return !isdigit(Ch) || Ch > '5'? 0: Ch - '0';
+}
+
+void PutContextInfo(ContextT Ctx, char *Id) {
+   fprintf(stderr, "%s objects: %li\n%s attributes: %li\n%s table entries: %li\n%s fill ratio: %.3f%%\n", Id, Ctx->Objs, Id, Ctx->Atrs, Id, Ctx->Entries, Id, 100.0*Ctx->Entries/(Ctx->Objs*Ctx->Atrs));
 }
 
 #ifdef STATS
-void print_stats(stats_t *stats) {
-   for (int i = 0; i < Counters; i++)
-      if (CounterText[i] != NULL) fprintf(stderr, "%s: %li\n", CounterText[i], Counter[i]);
-   int i = 1;
-   for (; i < TimePos; i++) {
-      int usec_less = Time[i].tv_usec < Time[i - 1].tv_usec ? 1 : 0;
-      fprintf(stderr, "%s: %li.%06li s\n", TimeText[i], Time[i].tv_sec - Time[i - 1].tv_sec - usec_less, usec_less * 1000000 + Time[i].tv_usec - Time[i - 1].tv_usec);
+void PutStats() {
+   fprintf(stderr, "factors: %li\n", Factors);
+   fprintf(stderr, "closures: %li\n", Closures);
+   fprintf(stderr, "uncovered entries: %li\n", UnCovered);
+   fprintf(stderr, "overcovered entries: %li\n", OverCovered);
+   fprintf(stderr, "Ess contexts: %li\n", EssContexts);
+   for (int T = 1; T < Times; T++) {
+      int usec_less = Time[T].tv_usec < Time[T - 1].tv_usec? 1: 0;
+      fprintf(stderr, "%s: %li.%06li s\n", TimeText[T], Time[T].tv_sec - Time[T - 1].tv_sec - usec_less, usec_less*1000000 + Time[T].tv_usec - Time[T - 1].tv_usec);
    }
-   i--;
-   int usec_less = Time[i].tv_usec < Time[0].tv_usec ? 1 : 0;
-   fprintf(stderr, "total time: %li.%06li s\n", Time[i].tv_sec - Time[0].tv_sec - usec_less, usec_less * 1000000 + Time[i].tv_usec - Time[0].tv_usec);
+   int T = Times > 0? Times - 1: 0;
+   int usec_less = Time[T].tv_usec < Time[0].tv_usec? 1: 0;
+   fprintf(stderr, "total time: %li.%06li s\n", Time[T].tv_sec - Time[0].tv_sec - usec_less, usec_less*1000000 + Time[T].tv_usec - Time[0].tv_usec);
 }
 #endif
 
-// CLI Boolean factors as formal concepts finding main, prints and help
+// CLI Boolean factors as formal concepts finding main, prints and help.
 #ifdef STATS
-void print_factor_info(data_t *intent, data_t **extent, context_t *context, concept_flags_t flags, stats_t *stats) {
-   fprintf(stderr, "factor %li: covered %li = %.3f%%", Counter[FACTORS], context->table_entries - Counter[UNCOVERED], 100.0 - 100.0 * Counter[UNCOVERED] / context->table_entries);
-   if (Counter[OVERCOVERED] != 0) fprintf(stderr, ", overcovered %li = %.3f%%", Counter[OVERCOVERED], 100.0 * Counter[OVERCOVERED] / (context->objects * context->attributes - context->table_entries));
+void PutFactorInfo(DataT *In, DataT **Ex, ContextT Ctx, ConceptFlagT Flags) {
+   fprintf(stderr, "factor %li: covered %li = %.3f%%", Factors, Ctx->Entries - UnCovered, 100.0 - 100.0*UnCovered/Ctx->Entries);
+   if (OverCovered > 0) fprintf(stderr, ", overcovered %li = %.3f%%", OverCovered, 100.0*OverCovered/(Ctx->Objs*Ctx->Atrs - Ctx->Entries));
    fprintf(stderr, "\n");
 }
 #else
-void print_factor_info(data_t *intent, data_t **extent, context_t *context, concept_flags_t flags) {
-   static count_t i = 1;
-   fprintf(stderr, "factor %li\n", i++);
+void PutFactorInfo(DataT *In, DataT **Ex, ContextT Ctx, ConceptFlagT Flags) {
+   static CountT F = 1;
+   fprintf(stderr, "factor %li\n", F++);
 }
 #endif
 
-void main_help(bool DoExit) {
-   fprintf(stderr, "%s [-Vverbosity] [-attr_offset] [-Tthreshold] [-Smin_support] [-Oa|-Oo|-Of] [-sc|-sr|-sb]", program_name);
-   find_factors_help(false);
-   fprintf(stderr, " [input_filename [output_filename]]\n");
+void Usage(bool DoExit) {
    fprintf(stderr,
-      "\n"
-      "-h             help (display this message)\n"
-      "-Vverbosity    verbosity level, verbosity = 0-5, 0 = no output, 1 = factors output, 2 = counters & time stderr output, 3 = 1 + 2, 4 = 2 + info stderr output, 5 = 1 + 4, default 1\n"
-      "-attr_offset   number of the first attribute in input, attr_offset = 0+, default 0\n"
+      "%s [-Vlevel] [-attr_offset] [-Tthreshold] [-Smin_support] [-Oa|-Oo|-Of] [-sc|-sr|-sb] [-ness_iters] [input_file [output_file]]\n"
+      "Options:"
+      "-h          help (display this message)\n"
+      "-Vn         verbosity level n = 0-5, 0 = no output, 1/3/5 = factors output, 2/3 = counters & time stderr output, 4/5 = info stderr output, default 1\n"
+      "-n          the first attribute in the input, n = 0+, default 0\n"
+      "-Tn         sufficient factorization threshold in %%, n = 0-100, default 100\n"
+      "-Sn         minimal support of factors, n = 0+, default 0\n"
+      "-Oa|-Oo|-Of output attributes | objects | factors (attributes | objects), default -Oa\n"
+      "-sc|-sr|-sb sort columns by support | rows lexicaly | both prior to computation\n"
+      "-nn         maximal number of Ess context iterations, n = 0+, 0 = while changes, default 1\n\n"
+      "input_file  input context data file name\n"
+      "output_file output context data file name\n",
+      App
    );
-   fprintf(stderr,
-      "-Tthreshold    sufficient factorization threshold in %%, threshold = 0-100, default 100\n"
-      "-Smin_support  minimal support of factors, min_support = 0+, default 0\n"
-      "-Oa|-Oo|-Of    output attributes | objects | factors (attributes | objects), default -Oa\n"
-      "-sc|-sr|-sb    sort columns by support | rows lexicaly | both prior to computation\n"
-   );
-   find_factors_help(true);
-   fprintf(stderr, "input_filename input context data file name\n");
    if (DoExit) exit(EXIT_SUCCESS);
+#if 0 //(@) Present in the original, possibly by mistake.
+   exit(EXIT_FAILURE);
+#endif
 }
 
-int main_process_args(int argc, char **argv) {
-   int index = 0;
-   if (argv[index][0] == '-') switch (argv[index][1]) {
-      case 'T': threshold = atoi(argv[index++] + 2); break;
-      case 'S': min_support = atoi(argv[index++] + 2); break;
-      case 'O': switch (argv[index++][2]) {
-         case 'a': factor_output = CONCEPT_SAVE_ATTRIBS_ONLY; break;
-         case 'o': factor_output = CONCEPT_SAVE_OBJECTS_ONLY; break;
-         case 'f': factor_output = 0; break;
-         default: return 0;
+bool GetArg(char *Arg) {
+   if (Arg[0] == '-') switch (Arg[1]) {
+      case 'T': Tiny = atoi(&Arg[2]); break;
+      case 'S': LoSup = atoi(&Arg[2]); break;
+      case 'O': switch (Arg[2]) {
+         case 'a': FactorMode = AtrOnlyCP; break;
+         case 'o': FactorMode = ObjOnlyCP; break;
+         case 'f': FactorMode = 0; break;
+         default: return false;
       }
       break;
-      case 's': switch (argv[index++][2]) {
-         case 'c': context_sort = CONTEXT_SORT_COLS; break;
-         case 'r': context_sort = CONTEXT_SORT_ROWS; break;
-         case 'b': context_sort = CONTEXT_SORT_COLS | CONTEXT_SORT_ROWS; break;
-         default: return 0;
+      case 's': switch (Arg[2]) {
+         case 'c': SortBy = SortByX; break;
+         case 'r': SortBy = SortByY; break;
+         case 'b': SortBy = SortByX | SortByY; break;
+         default: return false;
       }
       break;
-      default: index += find_factors_process_args(argc - index, &argv[index]);
+      case 'n': EssN = atoi(&Arg[2]); break;
+      default: return false;
    }
-   return index;
+   return true;
 }
 
-void main_program(void) {
-#ifdef STATS
-   stats_t *stats; init_stats(&stats, 1, 6, 10);
-#endif
-   SAVE_TIME("");
-   io_t io; init_io(&io, (io_func_t *)read_file_to_io, input_file);
-   context_t context; input_context_from_io(&context, &io, attr_offset);
-   if (verbosity >= VERBOSITY_INFO) print_context_info(&context, "input");
-   SAVE_TIME("input read time");
-   if (context_sort != 0) sort_context(&context, context_sort);
-   if (min_support != 0) {
-      remove_low_support_attribs_from_context(&context, min_support);
-      if (verbosity >= VERBOSITY_INFO) print_context_info(&context, "preprocessed");
-   }
-   SAVE_TIME("preprocessing time");
-   SET_COUNTER_TEXT(FACTORS, "factors");
-   SET_COUNTER_TEXT(CLOSURES, "closures");
-   SET_COUNTER_TEXT(UNCOVERED, "uncovered entries");
-   SET_COUNTER_TEXT(OVERCOVERED, "overcovered entries");
-   free_io(&io);
-   init_io(&io, (io_func_t *)write_file_from_io, output_file);
-   factors_t factors; init_factors(&factors, threshold);
-   if (verbosity % 2)
-      init_concepts(&factors.concepts, min_support, (concept_save_func_t *)output_factor_to_io, &io, verbosity >= VERBOSITY_INFO ? (concept_info_func_t *)print_factor_info : NULL, factor_output);
-   else
-      init_concepts(&factors.concepts, min_support, NULL, NULL, verbosity >= VERBOSITY_INFO ? (concept_info_func_t *)print_factor_info : NULL, 0);
-   find_factors(&context, &factors STATS_DATA_ARG);
-   IO_FUNC(&io, OUTPUT_ALL);
-   SAVE_TIME("find time");
-   free_concepts(&factors.concepts);
-   free_io(&io);
-#ifdef STATS
-   if (verbosity >= VERBOSITY_STATS) print_stats(stats);
-   free_stats(&stats);
-#endif
-   destroy_context(&context);
-}
-
-// CLI main
-int main(int argc, char **argv) {
-   program_name = argv[0]; if (program_name == NULL || *program_name == '\0') program_name = "iteress";
-   bool input_file_stdin = false;
-   input_file = stdin, output_file = stdout;
-   for (int index = 1; index < argc; )
-      if (argv[index][0] == '-') switch (argv[index][1]) {
-         case '\0': input_file_stdin = true, index++; break;
-         case 'h': main_help(true); break;
-         case 'V': verbosity = atoi(argv[index++] + 2); break;
+// CLI main.
+int main(int AC, char **AV) {
+   App = AC == 0? NULL: AV[0]; if (App == NULL || *App == '\0') App = "IterEss";
+   bool IsStdIn = false;
+   InF = stdin, ExF = stdout;
+   for (int A = 1; A < AC; ) {
+      char *Arg = AV[A];
+      if (Arg[0] == '-') switch (Arg[1]) {
+         case '\0': IsStdIn = true, A++; break;
+         case 'h': Usage(true); break;
+         case 'V': Noise = CharToNoiseMode(Arg[2]), A++; break;
          case '0': case '1': case '2': case '3': case '4':
          case '5': case '6': case '7': case '8': case '9':
-            attr_offset = atoi(argv[index++] + 1);
+            Atr0 = atoi(&Arg[1]), A++;
          break;
-         default: {
-            int shift = main_process_args(argc - index, &argv[index]);
-            if (shift == 0) main_help(false), index++; else index += shift;
-         }
+         default:
+            if (!GetArg(Arg)) Usage(false);
+            A++;
+         break;
+      } else if (InF == stdin && !IsStdIn) InF = fopen(Arg, "rb"), A++;
+      else if (ExF == stdout) {
+         if (InF != NULL) ExF = fopen(Arg, "wb"), A++;
       } else {
-         if (input_file == stdin && !input_file_stdin) input_file = fopen(argv[index++], "rb");
-         else if (output_file == stdout) {
-            if (input_file != NULL) output_file = fopen(argv[index++], "wb");
-         } else {
-            int shift = main_process_args(argc - index, &argv[index]);
-            if (shift == 0) main_help(false), index++; else index += shift;
-         }
+         if (!GetArg(Arg)) Usage(false);
+         A++;
       }
-   if (input_file == NULL) { error("cannot open input data stream"); return EXIT_FAILURE; }
-   if (output_file == NULL) { error("cannot open output data stream"); return EXIT_FAILURE; }
-   main_program();
-   fclose(input_file);
-   fclose(output_file);
+   }
+   if (InF == NULL) { Error("Cannot open input data stream"); return EXIT_FAILURE; }
+   if (ExF == NULL) { Error("Cannot open output data stream"); return EXIT_FAILURE; }
+   SaveTime("");
+   struct IoT Io; MakeIO(&Io, (IoOpT)ReadIO, InF);
+   struct ContextT Context; IoToContext(&Context, &Io, Atr0);
+   if (Noise&InfoV) PutContextInfo(&Context, "input");
+   SaveTime("input read time");
+   if (SortBy != 0) SortContext(&Context, SortBy);
+   if (LoSup != 0) {
+      PruneContextAtrs(&Context, LoSup);
+      if (Noise&InfoV) PutContextInfo(&Context, "preprocessed");
+   }
+   SaveTime("preprocessing time");
+   FreeIO(&Io);
+   MakeIO(&Io, (IoOpT)WriteIO, ExF);
+   InfoConceptOpT ICOp = Noise&InfoV? PutFactorInfo: NULL;
+   struct ConceptT Concepts = Noise&ExV?
+      (struct ConceptT){ LoSup, FactorToIO, &Io, ICOp, FactorMode }:
+      (struct ConceptT){ LoSup, NULL, NULL, ICOp, 0 };
+   FindFactors(&Context, Tiny, &Concepts);
+   OpIO(&Io, ExFL);
+   SaveTime("find time");
+   FreeIO(&Io);
+#ifdef STATS
+   if (Noise&(StatV | InfoV)) PutStats();
+#endif
+   FreeContext(&Context);
+   fclose(InF), fclose(ExF);
    return EXIT_SUCCESS;
 }
