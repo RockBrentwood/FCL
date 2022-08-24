@@ -3,11 +3,16 @@ APPS=fcbo iteress pcbo
 ifneq (, $(findstring Windows, $(OS)))
 PLATFORM=windows
 X=.exe
-LIBS=
+LIBP=
+LIBM=
+## RM=del ## Windows uses rm, now?
+RM=rm -f
 else
 PLATFORM=$(shell uname -s | tr '[:upper:]' '[:lower:]')
 X=
-LIBS=-lpthread
+LIBP=-lpthread
+LIBM=-lm
+RM=rm -f
 endif
 
 CC=gcc
@@ -35,9 +40,9 @@ endif
 STRIP=strip $@$X
 STRIP_STATIC=strip $@-$(PLATFORM)-$(ARCH)$X
 
-.PHONY: all debug static clean
+.PHONY: all debug static test test-demo test-debug clean clobber
 
-all: $(APPS)
+all: fca $(APPS)
 ##	$(CC) $(CFLAGS) $(FOPT) $(FARCH) -o $@$X $(filter %.c,$^)
 ##	strip $@$X
 
@@ -48,6 +53,9 @@ static: $(addsuffix -static,$(APPS))
 ##	$(CC) $(CFLAGS) $(FOPT) $(FARCH) -static -o $@-$(PLATFORM)-$(ARCH) $(filter %.c,$^)
 ##	strip $@-$(PLATFORM)-$(ARCH)$X
 
+fca: fca.c
+	$(CC) $(CFLAGS) $^ -o $@$X $(LIBM)
+
 fcbo: %: %.c
 	$(CC) $(CFLAGS) $(FOPT) $(FARCH) -o $@$X $^
 	$(STRIP)
@@ -55,7 +63,7 @@ iteress: %: %.c
 	$(CC) $(CFLAGS) $(FOPT) $(FARCH) -o $@$X $^
 	$(STRIP)
 pcbo: %: %.c
-	$(CC) $(CFLAGS) $(FOPT) $(FARCH) $(LIBS) -o $@$X $^
+	$(CC) $(CFLAGS) $(FOPT) $(FARCH) $(LIBP) -o $@$X $^
 	$(STRIP)
 
 fcbo-debug: %-debug: %.c
@@ -65,7 +73,7 @@ iteress-debug: %-debug: %.c
 	$(CC) $(CFLAGS) -g $(FARCH) -o $@$X $^
 
 pcbo-debug: %-debug: %.c
-	$(CC) $(CFLAGS) -g $(FARCH) $(LIBS) -o $@$X $^
+	$(CC) $(CFLAGS) -g $(FARCH) $(LIBP) -o $@$X $^
 
 fcbo-static: %-static: %.c
 	$(CC) $(CFLAGS) $(FOPT) $(FARCH) -static -o $@-$(PLATFORM)-$(ARCH)$X $^
@@ -76,7 +84,7 @@ iteress-static: %-static: %.c
 	$(STRIP_STATIC)
 
 pcbo-static: %-static: %.c
-	$(CC) $(CFLAGS) $(FOPT) $(FARCH) -static -o $@-$(PLATFORM)-$(ARCH)$X $^ $(LIBS)
+	$(CC) $(CFLAGS) $(FOPT) $(FARCH) -static -o $@-$(PLATFORM)-$(ARCH)$X $^ $(LIBP)
 	$(STRIP_STATIC)
 
 test: $(APPS)
@@ -85,11 +93,14 @@ test: $(APPS)
 test-debug: $(addsuffix -debug,$(APPS))
 	sh test.sh -debug
 
+test-demo: fca
+	sh demo.sh
 clean:
-	rm -f Log
-	rm -f *.ex
+	$(RM) Log
+	$(RM) *.ex
 
 clobber: clean
-	rm -f $(APPS)$X
-	rm -f $(addsuffix -debug$X,$(APPS))
-	rm -f $(addsuffix -static-$(PLATFORM)-$(ARCH)$X,$(APPS))
+	$(RM) fca$X
+	$(RM) $(APPS)$X
+	$(RM) $(addsuffix -debug$X,$(APPS))
+	$(RM) $(addsuffix -static-$(PLATFORM)-$(ARCH)$X,$(APPS))

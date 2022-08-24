@@ -1,0 +1,1906 @@
+Affine.c	GradeImage GetImage(char *Path);
+Affine.c	GradeImage NewGradeImage(long Xs, long Ys);
+Affine.c	#include "DeBMP.h"
+Affine.c	#include "EnBMP.h"
+Affine.c	#include <math.h>
+Affine.c	#include <stdio.h>
+Affine.c	#include <stdlib.h>
+Affine.c	int main(int AC, char *AV[]);
+Affine.c	int PutImage(GradeImage Im, char *Path);
+Affine.c	long RoundTo(double X);
+Affine.c	typedef struct Grade { double R, G, B, W; } *Grade;
+Affine.c	typedef struct GradeImage { Grade *Frame; long Xs, Ys; } *GradeImage;
+Affine.c	void FreeGradeImage(GradeImage Im);
+Alpha.c	byte CharOf(byte X);
+Alpha.c	byte Font16[CHARS][0x20];
+Alpha.c	byte Font32[CHARS][0x80];
+Alpha.c	byte Font8[CHARS][8];
+Alpha.c	byte GetB(byte *Dst, int N, int X, int Y);
+Alpha.c	const long Xs = 640;
+Alpha.c	const long Ys = 480;
+Alpha.c	#define CHARS 28
+Alpha.c	double H = 160.0;
+Alpha.c	FILE *ExF;
+Alpha.c	FILE *OpenF(char *Path);
+Alpha.c	#include <bios.h>
+Alpha.c	#include <ctype.h>
+Alpha.c	#include <graph.h>
+Alpha.c	#include <math.h>
+Alpha.c	#include <stdio.h>
+Alpha.c	#include <stdlib.h>
+Alpha.c	int CurFont;
+Alpha.c	int GetDot(int X, int Y);
+Alpha.c	int Keyboard(void);
+Alpha.c	int KeyHit(void);
+Alpha.c	int main(void);
+Alpha.c	int SizeTab[28];
+Alpha.c	int X0 = Xs/2;
+Alpha.c	int Y0 = Ys/2;
+Alpha.c	long Color[0x10];
+Alpha.c	typedef unsigned char byte;
+Alpha.c	void CloseF(FILE **ExFP);
+Alpha.c	void Double(size_t N, byte *Src, byte *Dst);
+Alpha.c	void LoadFont(void);
+Alpha.c	void PutB(byte *Dst, size_t N, int X, int Y, int B);
+Alpha.c	void PutC(FILE *ExF, byte B);
+Alpha.c	void PutL(FILE *ExF, unsigned long L);
+Alpha.c	void PutS(FILE *ExF, char *Str);
+Alpha.c	void PutW(FILE *ExF, unsigned W);
+Alpha.c	void ScrInit(void);
+Alpha.c	void ScrReset(void);
+Alpha.c	void SetDot(int X, int Y);
+Alpha.c	void Show16(int X0, int Y0);
+Alpha.c	void Show32(int X0, int Y0);
+Alpha.c	void Show8(int X0, int Y0);
+Alpha.c	void ShowB(byte *Src, size_t N, int X, int Y, byte H);
+Alpha.c	void ShowStr(int X, int Y, char *S);
+Banner.c	byte Font16[CHARS][0x20], Font32[CHARS][0x80];
+Banner.c	byte Font8[CHARS][8];
+Banner.c	byte GetB(byte *Dst, int N, int X, int Y);
+Banner.c	byte Region(int X, int Y);
+Banner.c	const long Xs = 640;
+Banner.c	const long Ys = 480;
+Banner.c	#define CHARS 9
+Banner.c	#define NN 32
+Banner.c	double H = 160.0;
+Banner.c	double Random(double Max);
+Banner.c	FILE *ExF;
+Banner.c	#include <bios.h>
+Banner.c	#include <graph.h>
+Banner.c	#include <math.h>
+Banner.c	#include <stdio.h>
+Banner.c	#include <stdlib.h>
+Banner.c	int Keyboard(void);
+Banner.c	int KeyHit(void);
+Banner.c	int Mag(int X, int Y);
+Banner.c	int main(void);
+Banner.c	int X0 = Xs/2;
+Banner.c	int Y0 = Ys/2;
+Banner.c	long Color[0x10];
+Banner.c	typedef unsigned char byte;
+Banner.c	void Double(size_t N, byte *Src, byte *Dst);
+Banner.c	void LoadFont(void);
+Banner.c	void PutB(byte *Dst, size_t N, int X, int Y, int B);
+Banner.c	void PutC(FILE *ExF, byte B);
+Banner.c	void PutL(FILE *ExF, unsigned long L);
+Banner.c	void PutW(FILE *ExF, unsigned W);
+Banner.c	void ScrInit(void);
+Banner.c	void ScrReset(void);
+Banner.c	void ShowB(byte *Src, size_t N, int X, int Y, byte H);
+Bleach.c	#include "DeBMP.h"
+Bleach.c	#include "EnBMP.h"
+Bleach.c	#include <stdio.h>
+Bleach.c	#include <stdlib.h>
+Bleach.c	int main(int AC, char *AV[]);
+Blur.c	Grade *GetImage(char *Path, long *XsP, long *YsP);
+Blur.c	Grade *NewGradeImage(long Xs, long Ys);
+Blur.c	#include <ctype.h>
+Blur.c	#include "DeBMP.h"
+Blur.c	#include "EnBMP.h"
+Blur.c	#include <math.h>
+Blur.c	#include <stdio.h>
+Blur.c	#include <stdlib.h>
+Blur.c	#include <string.h>
+Blur.c	int main(int AC, char *AV[]);
+Blur.c	int PutImage(char *Path, Grade *Frame, long Xs, long Ys);
+Blur.c	typedef struct Grade { double B, G, R; } *Grade;
+Blur.c	typedef unsigned char byte;
+Blur.c	void Blur(Grade *FrX, Grade *FrY, long Xs, long Ys, double Diag);
+Blur.c	void FreeGradeImage(Grade *Frame);
+BMP3to3.c	#include "DeBMP.h"
+BMP3to3.c	#include "EnBMP.h"
+BMP3to3.c	#include <stdio.h>
+BMP3to3.c	#include <stdlib.h>
+BMP3to3.c	int Combine(int Sc[3], int B, int G, int R);
+BMP3to3.c	int main(int AC, char *AV[]);
+BMP4to3.c	bool Combine4(int Sc[4], int B, int G, int R, int A);
+BMP4to3.c	bool GetHeader4(FILE *InF, long *XP, long *YP);
+BMP4to3.c	bool GetL(FILE *InF, long *LP);
+BMP4to3.c	bool GetW(FILE *InF, short *WP);
+BMP4to3.c	FILE *GetFile4(char *Path, long *XP, long *YP);
+BMP4to3.c	#include <ctype.h>
+BMP4to3.c	#include "EnBMP.h"
+BMP4to3.c	#include <math.h>
+BMP4to3.c	#include <stdio.h>
+BMP4to3.c	#include <stdlib.h>
+BMP4to3.c	#include <string.h>
+BMP4to3.c	int main(int AC, char *AV[]);
+Cast.c	ColorImage GetImage(char *Path);
+Cast.c	ColorImage NewColorImage(long Xs, long Ys);
+Cast.c	const long Alp = 0x80;
+Cast.c	const long Bet = 0xff;
+Cast.c	#define HI 0x700
+Cast.c	#define HW (6*Alp + 7*Bet + 1)
+Cast.c	double DeColor(Color C);
+Cast.c	#include "DeBMP.h"
+Cast.c	#include "EnBMP.h"
+Cast.c	#include <math.h>
+Cast.c	#include <stdio.h>
+Cast.c	#include <stdlib.h>
+Cast.c	int main(int AC, char *AV[]);
+Cast.c	int PutImage(ColorImage Im, char *Path);
+Cast.c	long BGRtoH(long B, long G, long R);
+Cast.c	typedef struct ColorImage { Color *Frame; long Xs, Ys; } *ColorImage;
+Cast.c	void FreeColorImage(ColorImage Im);
+Classify.c	#include "DeBMP.h"
+Classify.c	#include "EnBMP.h"
+Classify.c	#include <math.h>
+Classify.c	#include <stdio.h>
+Classify.c	#include <stdlib.h>
+Classify.c	int Convert(Color *IF, long Xs, long Ys);
+Classify.c	int main(int AC, char *AV[]);
+Classify.c	long DeRef(long *Tab, long Ts, long T);
+Classify.c	struct Item Tab[];
+Classify.c	typedef struct Item { char *Name; double dX0, dY0, X0, Y0, U0; char Layer0; long cX0, cY0; double dX1, dY1, X1, Y1, U1; char Layer1; long cX1, cY1; } *Item;
+Classify.c	unsigned Ts = sizeof Tab/sizeof Tab[0];
+Cluster3.c	Cluster CTab[KS];
+Cluster3.c	const double Mag = 200.0;
+Cluster3.c	const long Alp = 0x80;
+Cluster3.c	const long Bet = 0xff;
+Cluster3.c	#define ColorMapped 1
+Cluster3.c	#define HI 0x700
+Cluster3.c	#define HW (6*Alp + 7*Bet + 1)
+Cluster3.c	#define KS 12
+Cluster3.c	#define XS 6
+Cluster3.c	double DeColor(Color C);
+Cluster3.c	double DelErr(Cluster *C0, Cluster *C1, double *V);
+Cluster3.c	double Err(Grade *IF, Color *OF, unsigned Xs, unsigned Ys);
+Cluster3.c	double Far = 2000.0;
+Cluster3.c	double Scaling = 0.1;
+Cluster3.c	double Square(double D);
+Cluster3.c	#else
+Cluster3.c	#endif
+Cluster3.c	#if ColorMapped
+Cluster3.c	#include "DeBMP.h"
+Cluster3.c	#include "EnBMP.h"
+Cluster3.c	#include <math.h>
+Cluster3.c	#include <stdarg.h>
+Cluster3.c	#include <stdio.h>
+Cluster3.c	#include <stdlib.h>
+Cluster3.c	#include <time.h>
+Cluster3.c	int main(int AC, char *AV[]);
+Cluster3.c	long BGRtoH(long B, long G, long R);
+Cluster3.c	long GetClass(Color *OF, long X, long Y);
+Cluster3.c	long RandomClass(void);
+Cluster3.c	long SetClass(Color *OF, long X, long Y, long K);
+Cluster3.c	typedef double Vector[XS];
+Cluster3.c	typedef struct Grade { long B, G, R; double U; } *Grade;
+Cluster3.c	typedef struct { int N; Vector Mu; } Cluster;
+Cluster3.c	unsigned Ks = 4;
+Cluster3.c	void AddC(Cluster *CP, double *V);
+Cluster3.c	void EnXY(Grade G, Color C);
+Cluster3.c	void EnZ(Grade G, Color C);
+Cluster3.c	void GetVec(double *V, unsigned X, unsigned Y, Grade IC);
+Cluster3.c	void MapColor(Color OC, unsigned K);
+Cluster3.c	void Objectify(Grade *IF, Color *OF, long Xs, long Ys);
+Cluster3.c	void SubC(Cluster *CP, double *V);
+CntX.c	#include "DeBMP.h"
+CntX.c	#include <stdio.h>
+CntX.c	#include <stdlib.h>
+CntX.c	int main(int AC, char *AV[]);
+CntX.c	long BTab[0x100], GTab[0x100], RTab[0x100];
+Color.c	FILE *PutHeader(char *Path, unsigned Xs, unsigned Ys);
+Color.c	#include <math.h>
+Color.c	#include <stdio.h>
+Color.c	#include <stdlib.h>
+Color.c	int main(void);
+Color.c	void Convert(int X, int Y, int *BP, int *GP, int *RP);
+Color.c	void PutL(FILE *ExF, unsigned long L);
+CompareBMP.c	double Compare(Color *IF0, Color *IF1, long Xs, long Ys);
+CompareBMP.c	#include "DeBMP.h"
+CompareBMP.c	#include <stdio.h>
+CompareBMP.c	#include <stdlib.h>
+CompareBMP.c	int main(int AC, char *AV[]);
+Contour.c	#include "DeBMP.h"
+Contour.c	#include "EnBMP.h"
+Contour.c	#include <stdio.h>
+Contour.c	#include <stdlib.h>
+Contour.c	int main(int AC, char *AV[]);
+Contour.c	long DeColor(long B, long G, long R);
+Contour.c	void Quantize(Color CP, long RadY, long MinY, long DelY);
+Cool.c	#include "DeBMP.h"
+Cool.c	#include "EnBMP.h"
+Cool.c	#include <math.h>
+Cool.c	#include <stdio.h>
+Cool.c	#include <stdlib.h>
+Cool.c	int main(int AC, char *AV[]);
+Cross.c	ColorImage GetImage(char *Path);
+Cross.c	ColorImage NewColorImage(long Xs, long Ys);
+Cross.c	#include "DeBMP.h"
+Cross.c	#include "EnBMP.h"
+Cross.c	#include <math.h>
+Cross.c	#include <stdio.h>
+Cross.c	#include <stdlib.h>
+Cross.c	int main(int AC, char *AV[]);
+Cross.c	int PutImage(ColorImage Im, char *Path);
+Cross.c	typedef struct ColorImage { Color Map, *Frame; long Xs, Ys; } *ColorImage;
+Cross.c	void Convert(Color *IF, Color *OF, long Xs, long Ys, double P0, double P1);
+Cross.c	void FreeColorImage(ColorImage Im);
+CvtBMP.c	bool GetHeader(FILE *InF, long *XP, long *YP, int *BitsP);
+CvtBMP.c	bool GetL(FILE *InF, long *LP);
+CvtBMP.c	bool GetRow(FILE *InF, Color Row, long Xs, int Alpha, int GetAlpha);
+CvtBMP.c	bool GetW(FILE *InF, short *WP);
+CvtBMP.c	bool PutHeader(FILE *ExF, long Xs, long Ys, int Bits);
+CvtBMP.c	bool PutImage(ColorImage Im, char *Path);
+CvtBMP.c	bool PutL(FILE *ExF, long L);
+CvtBMP.c	bool PutRow(FILE *ExF, Color Row, long Xs, int Alpha);
+CvtBMP.c	bool PutW(FILE *ExF, short W);
+CvtBMP.c	ColorImage GetImage(char *Path, int GetAlpha);
+CvtBMP.c	ColorImage NewColorImage(long Xs, long Ys);
+CvtBMP.c	FILE *GetFile(char *Path, long *XP, long *YP, int *BitsP);
+CvtBMP.c	FILE *PutFile(char *Path, long Xs, long Ys, int Bits);
+CvtBMP.c	#include <math.h>
+CvtBMP.c	#include <stdio.h>
+CvtBMP.c	#include <stdlib.h>
+CvtBMP.c	int main(int AC, char *AV[]);
+CvtBMP.c	typedef enum { false = 0, true = 1 } bool;
+CvtBMP.c	typedef struct ColorImage { Color *Frame; long Xs, Ys; } *ColorImage;
+CvtBMP.c	typedef struct Color { int B, G, R; } *Color;
+CvtBMP.c	typedef struct Grade { double R, G, B; } *Grade;
+CvtBMP.c	void FreeColorImage(ColorImage Im);
+Cvt.c	const long Radius = 2;
+Cvt.c	#include "DeBMP.h"
+Cvt.c	#include "EnBMP.h"
+Cvt.c	#include <stdio.h>
+Cvt.c	#include <stdlib.h>
+Cvt.c	int main(int AC, char *AV[]);
+Cvt.c	struct Color CTab[];
+Cvt.c	unsigned Cs = sizeof CTab/sizeof CTab[0];
+Cvt.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+Cvt.c	void Quantize(Color IC, Color OC);
+Cy.c	double Quad(double A, double B, double C, double X);
+Cy.c	#include "DeBMP.h"
+Cy.c	#include "EnBMP.h"
+Cy.c	#include <math.h>
+Cy.c	#include <stdio.h>
+Cy.c	#include <stdlib.h>
+Cy.c	int main(int AC, char *AV[]);
+Cy.c	void Convert(Color IR, Color OR, long Xs);
+DeBias.c	ColorImage GetImage(char *Path);
+DeBias.c	ColorImage NewColorImage(long Xs, long Ys);
+DeBias.c	double DotPi(Vector A, Vector B, double R0, double R1, double R2);
+DeBias.c	double DotV(Vector I, Vector J);
+DeBias.c	double SinCos(double Om, double *SinP, double *CosP);
+DeBias.c	#include "DeBMP.h"
+DeBias.c	#include "EnBMP.h"
+DeBias.c	#include <math.h>
+DeBias.c	#include <stdio.h>
+DeBias.c	#include <stdlib.h>
+DeBias.c	int main(int AC, char *AV[]);
+DeBias.c	int PutImage(ColorImage Im, char *Path);
+DeBias.c	typedef double Vector[3];
+DeBias.c	typedef struct ColorImage { Color Map, *Frame; long Xs, Ys; } *ColorImage;
+DeBias.c	void Compose(Vector I, Vector J, Vector K, double X, double Y, double Z, Vector R);
+DeBias.c	void FreeColorImage(ColorImage Im);
+DeBias.c	void GetFrame(double Lg, double Lt, double Ph, Vector I, Vector J, Vector K);
+DeBias.c	void GetVector(double Lg, double Lt, double R, Vector A);
+DeBias.c	void Resolve(Vector I, Vector J, Vector K, Vector R);
+DeBleach.c	#include "DeBMP.h"
+DeBleach.c	#include "EnBMP.h"
+DeBleach.c	#include <stdio.h>
+DeBleach.c	#include <stdlib.h>
+DeBleach.c	int main(int AC, char *AV[]);
+DeBMP.c	bool GetHeader(FILE *InF, long *XP, long *YP);
+DeBMP.c	bool GetL(FILE *InF, long *LP);
+DeBMP.c	bool GetRow(FILE *InF, Color Row, long Xs);
+DeBMP.c	bool GetW(FILE *InF, short *WP);
+DeBMP.c	FILE *GetFile(char *Path, long *XP, long *YP);
+DeBMP.c	#include "DeBMP.h"
+DeBMP.c	#include <math.h>
+DeBMP.c	#include <stdio.h>
+DeBMP.c	#include <stdlib.h>
+DeColor.c	bool Match(long B, long G, long R);
+DeColor.c	#include "DeBMP.h"
+DeColor.c	#include "EnBMP.h"
+DeColor.c	#include <stdio.h>
+DeColor.c	#include <stdlib.h>
+DeColor.c	int main(int AC, char *AV[]);
+DeColor.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+Delta1.c	#include "DeBMP.h"
+Delta1.c	#include "EnBMP.h"
+Delta1.c	#include <stdio.h>
+Delta1.c	#include <stdlib.h>
+Delta1.c	int main(int AC, char *AV[]);
+Delta1.c	void Convert(Color *IF0, Color *IF1, Color *OF, long Xs, long Ys);
+Delta.c	#include "DeBMP.h"
+Delta.c	#include "EnBMP.h"
+Delta.c	#include <stdio.h>
+Delta.c	#include <stdlib.h>
+Delta.c	int main(int AC, char *AV[]);
+Delta.c	void Convert(Color *IF0, Color *IF1, Color *OF, long Xs, long Ys);
+DelU.c	const double MagO = 200.0;
+DelU.c	const long Alp = 0x80;
+DelU.c	const long Bet = 0xff;
+DelU.c	const long HI = 0x700;
+DelU.c	#define HW (6*Alp + 7*Bet + 1)
+DelU.c	double DeColor(Color CP);
+DelU.c	#include "DeBMP.h"
+DelU.c	#include <math.h>
+DelU.c	#include <stdio.h>
+DelU.c	#include <stdlib.h>
+DelU.c	int main(int AC, char *AV[]);
+DelU.c	long BGRtoH(long B, long G, long R);
+DeMix.c	#include "DeBMP.h"
+DeMix.c	#include "EnBMP.h"
+DeMix.c	#include <math.h>
+DeMix.c	#include <stdio.h>
+DeMix.c	#include <stdlib.h>
+DeMix.c	int main(int AC, char *AV[]);
+DeMix.c	void Convert(Color *IF0, Color *IF1, Color *OF, long Xs, long Ys, double Mix);
+Depth.c	const long Alp = 0x80;
+Depth.c	const long Bet = 0xff;
+Depth.c	const long HI = 0x700;
+Depth.c	#define HW (6*Alp + 7*Bet + 1)
+Depth.c	double DeColor(Color C);
+Depth.c	#include "DeBMP.h"
+Depth.c	#include "EnBMP.h"
+Depth.c	#include <stdio.h>
+Depth.c	#include <stdlib.h>
+Depth.c	int main(int AC, char *AV[]);
+Depth.c	long BGRtoH(long B, long G, long R);
+Depth.c	void Compile(Color *F, Color *FX, long Xs, long Ys);
+DeX.c	#define VERSION 1
+DeX.c	#elif VERSION == 1
+DeX.c	#else
+DeX.c	#endif
+DeX.c	#if VERSION == 0
+DeX.c	#include "DeBMP.h"
+DeX.c	#include "EnBMP.h"
+DeX.c	#include <stdio.h>
+DeX.c	#include <stdlib.h>
+DeX.c	int main(int AC, char *AV[]);
+DeX.c	void Convert(Color *IF, long Xs, long Ys);
+DeY.c	const long Alp = 0x80;
+DeY.c	const long Bet = 0xff
+DeY.c	const long HI = 0x700;
+DeY.c	#define HW (6*Alp + 7*Bet + 1)
+DeY.c	double DeColor(Color C);
+DeY.c	#include "DeBMP.h"
+DeY.c	#include <stdio.h>
+DeY.c	#include <stdlib.h>
+DeY.c	int main(int AC, char *AV[]);
+DeY.c	long BGRtoH(long B, long G, long R);
+DeY.c	long CTab[][2];
+DeY.c	unsigned Cs = sizeof CTab/sizeof CTab[0];
+DeZ0.c	const double MagO = 200.0;
+DeZ0.c	const long Alp = 0x80;
+DeZ0.c	const long Bet = 0xff;
+DeZ0.c	const long HI = 0x700;
+DeZ0.c	#define HW (6*Alp + 7*Bet + 1)
+DeZ0.c	double Convert(Color *IF, long Xs, long Ys);
+DeZ0.c	double DeColor(Color CP);
+DeZ0.c	#include "DeBMP.h"
+DeZ0.c	#include "EnBMP.h"
+DeZ0.c	#include <math.h>
+DeZ0.c	#include <stdio.h>
+DeZ0.c	#include <stdlib.h>
+DeZ0.c	#include <time.h>
+DeZ0.c	int main(int AC, char *AV[]);
+DeZ0.c	long BGRtoH(long B, long G, long R);
+DeZ1.c	const int Radius = 2;
+DeZ1.c	const long Alp = 0x80;
+DeZ1.c	const long Bet = 0xff;
+DeZ1.c	const long HI = 0x700;
+DeZ1.c	#define HW (6*Alp + 7*Bet + 1)
+DeZ1.c	double DeColor(Color C);
+DeZ1.c	#include "DeBMP.h"
+DeZ1.c	#include <math.h>
+DeZ1.c	#include <stdio.h>
+DeZ1.c	#include <stdlib.h>
+DeZ1.c	int main(int AC, char *AV[]);
+DeZ1.c	long BGRtoH(long B, long G, long R);
+DeZ1.c	struct Item { long X, Y; } Tab[];
+DeZ1.c	unsigned Ts = sizeof Tab/sizeof Tab[0];
+DeZ1.c	void Extract(Color *IF, long Xs, long Ys);
+DeZ.c	const int Radius = 2;
+DeZ.c	const long Alp = 0x80;
+DeZ.c	const long Bet = 0xff;
+DeZ.c	const long HI = 0x700;
+DeZ.c	#define HW (6*Alp + 7*Bet + 1)
+DeZ.c	#include "DeBMP.h"
+DeZ.c	#include "EnBMP.h"
+DeZ.c	#include <math.h>
+DeZ.c	#include <stdio.h>
+DeZ.c	#include <stdlib.h>
+DeZ.c	int main(int AC, char *AV[]);
+DeZ.c	struct Item { long X, Y; double U; } Tab[];
+DeZ.c	unsigned Ts = sizeof Tab/sizeof Tab[0];
+DeZ.c	void Convert(Color *IF, long Xs, long Ys);
+DeZ.c	void EnColor(double U, Color C);
+DeZ.c	void HtoBGR(long H, int *BP, int *GP, int *RP);
+Do3D.c	const long Alp = 0x80;
+Do3D.c	const long Bet = 0xff;
+Do3D.c	const unsigned RadR = 60;
+Do3D.c	#define HI 0x700
+Do3D.c	#define HW (6*Alp + 7*Bet + 1)
+Do3D.c	double MakeColor(long X, long Xs, Color CP);
+Do3D.c	#elif 0
+Do3D.c	#elif 1
+Do3D.c	#else
+Do3D.c	#endif
+Do3D.c	#if 0
+Do3D.c	#if 1
+Do3D.c	#include "DeBMP.h"
+Do3D.c	#include "EnBMP.h"
+Do3D.c	#include <math.h>
+Do3D.c	#include <stdio.h>
+Do3D.c	#include <stdlib.h>
+Do3D.c	int Convert(Color *IF, Color *OF, long Xs, long Ys);
+Do3D.c	int main(int AC, char *AV[]);
+Do3D.c	void EnColor(double U, Color C);
+Do3D.c	void HtoBGR(long H, int *BP, int *GP, int *RP);
+Edge.c	double ArgOf(double X, double Y);
+Edge.c	#include "DeBMP.h"
+Edge.c	#include "EnBMP.h"
+Edge.c	#include <math.h>
+Edge.c	#include <stdio.h>
+Edge.c	#include <stdlib.h>
+Edge.c	#include <string.h>
+Edge.c	int main(int AC, char *AV[]);
+Edge.c	void Convert(Color *IF, Color *OF, long Xs, long Ys, long nB, long nG, long nR);
+Edge.c	void Plot(double X, double Y, int *BP, int *GP, int *RP);
+Edit.c	byte GetB(FILE *InF);
+Edit.c	byte **Table;
+Edit.c	byte xRed[0x10], xGrn[0x10], xBlu[0x10];
+Edit.c	enum { Esc = 0x01b, Fun1 = 0x13b, Fun2 = 0x13c, Fun3 = 0x13d, Fun4 = 0x13e, Fun5 = 0x13f, Fun6 = 0x140, Fun7 = 0x141, Fun8 = 0x142, Fun9 = 0x143, Fun10 = 0x144, Home = 0x147, Up = 0x148, PgUp = 0x149, Left = 0x14b, Right = 0x14d, End = 0x14f, Down = 0x150, PgDn = 0x151, Ins = 0x152, Del = 0x153, SFn1 = 0x154, SFn2 = 0x155, SFn3 = 0x156, SFn4 = 0x157, SFn5 = 0x158, SFn6 = 0x159, SFn7 = 0x15a, SFn8 = 0x15b, SFn9 = 0x15c, SFn10 = 0x15d };
+Edit.c	#include <bios.h>
+Edit.c	#include <graph.h>
+Edit.c	#include <stdio.h>
+Edit.c	#include <stdlib.h>
+Edit.c	int Keyboard(void);
+Edit.c	int main(int AC, char *AV[]);
+Edit.c	int X0 = -1;
+Edit.c	int Y0 = -1;
+Edit.c	typedef unsigned char byte;
+Edit.c	unsigned GetW(FILE *InF);
+Edit.c	unsigned long Color[0x10];
+Edit.c	unsigned long GetL(FILE *InF);
+Edit.c	unsigned Xs, Ys;
+Edit.c	void Bar(int I);
+Edit.c	void PutB(FILE *ExF, byte B);
+Edit.c	void PutL(FILE *ExF, unsigned long L);
+Edit.c	void PutW(FILE *ExF, unsigned W);
+Edit.c	void ScrInit(void);
+Edit.c	void ScrReset(void);
+Edit.c	void SetTable(unsigned Xs, unsigned Ys);
+Edit.c	void Show(int X, int Y);
+Edit.c	void Update(int X, int Y, int I);
+EnBMP.c	bool PutHeader(FILE *ExF, long Xs, long Ys);
+EnBMP.c	bool PutL(FILE *ExF, long L);
+EnBMP.c	bool PutRow(FILE *ExF, Color Row, long Xs);
+EnBMP.c	bool PutW(FILE *ExF, short W);
+EnBMP.c	FILE *PutFile(char *Path, long Xs, long Ys);
+EnBMP.c	#include "EnBMP.h"
+EnBMP.c	#include <math.h>
+EnBMP.c	#include <stdio.h>
+EnBMP.c	#include <stdlib.h>
+EnDepth.c	const long Alp = 0x80;
+EnDepth.c	const long Bet = 0xff;
+EnDepth.c	const long HI = 0x700;
+EnDepth.c	#define HW (6*Alp + 7*Bet + 1)
+EnDepth.c	double MuU = +0.262771;
+EnDepth.c	double UA[27];
+EnDepth.c	double XA = +0.013508;
+EnDepth.c	double YA = -0.597025;
+EnDepth.c	#include "DeBMP.h"
+EnDepth.c	#include "EnBMP.h"
+EnDepth.c	#include <math.h>
+EnDepth.c	#include <stdio.h>
+EnDepth.c	#include <stdlib.h>
+EnDepth.c	int main(int AC, char *AV[]);
+EnDepth.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+EnDepth.c	void EnColor(double U, Color C);
+EnDepth.c	void HtoBGR(long H, int *BP, int *GP, int *RP);
+EnMask.c	#include "DeBMP.h"
+EnMask.c	#include "EnBMP.h"
+EnMask.c	#include <stdio.h>
+EnMask.c	#include <stdlib.h>
+EnMask.c	int main(int AC, char *AV[]);
+EnZ.c	ColorImage GetImage(char *Path);
+EnZ.c	ColorImage NewColorImage(long Xs, long Ys);
+EnZ.c	const double MagO = 200.0;
+EnZ.c	const long Alp = 0x80;
+EnZ.c	const long Bet = 0xff;
+EnZ.c	const long HI = 0x700;
+EnZ.c	const long HW = 6*Alp + 7*Bet + 1;
+EnZ.c	double DeColor(Color C);
+EnZ.c	GradeImage NewGradeImage(long Xs, long Ys);
+EnZ.c	#include "DeBMP.h"
+EnZ.c	#include "EnBMP.h"
+EnZ.c	#include <math.h>
+EnZ.c	#include <stdio.h>
+EnZ.c	#include <stdlib.h>
+EnZ.c	int main(int AC, char *AV[]);
+EnZ.c	int MapDepth(ColorImage Im, double Ovalness, int AtFG, double U0, double Power, ColorImage ImU);
+EnZ.c	int PutImage(ColorImage Im, char *Path);
+EnZ.c	long BGRtoH(long B, long G, long R);
+EnZ.c	typedef double *Grade;
+EnZ.c	typedef struct ColorImage { Color *Frame; long Xs, Ys; } *ColorImage;
+EnZ.c	typedef struct GradeImage { Grade *Frame; long Xs, Ys; } *GradeImage;
+EnZ.c	void EnColor(double U, Color CP);
+EnZ.c	void FreeColorImage(ColorImage Im);
+EnZ.c	void FreeGradeImage(GradeImage Im);
+EnZ.c	void HtoBGR(long H, int *BP, int *GP, int *RP);
+Extract0.c	#include "DeBMP.h"
+Extract0.c	#include "EnBMP.h"
+Extract0.c	#include <stdio.h>
+Extract0.c	#include <stdlib.h>
+Extract0.c	int main(int AC, char *AV[]);
+Extract0.c	int Valid(int L);
+Extract0.c	void Convert(Color Row, long Xs, long Y);
+Extract2.c	const long Alp = 0x80;
+Extract2.c	const long Bet = 0xff;
+Extract2.c	const long HI = 0x700;
+Extract2.c	#define HW (6*Alp + 7*Bet + 1)
+Extract2.c	double DeColor(Color C);
+Extract2.c	#include "DeBMP.h"
+Extract2.c	#include <stdio.h>
+Extract2.c	#include <stdlib.h>
+Extract2.c	int main(int AC, char *AV[]);
+Extract2.c	long BGRtoH(long B, long G, long R);
+Extract.c	#include "DeBMP.h"
+Extract.c	#include "EnBMP.h"
+Extract.c	#include <stdio.h>
+Extract.c	#include <stdlib.h>
+Extract.c	int main(int AC, char *AV[]);
+Extract.c	struct Color CTab[];
+Extract.c	unsigned Cs = sizeof CTab/sizeof CTab[0];
+Extract.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+Extract.c	void Quantize(Color IC, Color OC);
+FillBMP.c	double Weight(double R, double HiR, double LoR);
+FillBMP.c	GradeImage GetImage(char *Path);
+FillBMP.c	GradeImage NewGradeImage(long Xs, long Ys);
+FillBMP.c	#include "DeBMP.h"
+FillBMP.c	#include "EnBMP.h"
+FillBMP.c	#include <math.h>
+FillBMP.c	#include <stdio.h>
+FillBMP.c	#include <stdlib.h>
+FillBMP.c	int Convert(Grade *IF, Grade *IFX, Grade *OF, long Xs, long Ys, double HiR, double LoR);
+FillBMP.c	int main(int AC, char *AV[]);
+FillBMP.c	int PutImage(GradeImage Im, char *Path);
+FillBMP.c	long RoundTo(double X);
+FillBMP.c	Segment PreCompile(double HiR, double LoR, unsigned *SegsP);
+FillBMP.c	typedef struct Grade { double R, G, B, W; } *Grade;
+FillBMP.c	typedef struct GradeImage { Grade *Frame; long Xs, Ys; } *GradeImage;
+FillBMP.c	typedef struct Segment { long dX, dY; double W; } *Segment;
+FillBMP.c	void FreeGradeImage(GradeImage Im);
+Flow1.c	#define Xs 0x3ff
+Flow1.c	#define Ys 0x3ff
+Flow1.c	#include "EnBMP.h"
+Flow1.c	#include <math.h>
+Flow1.c	#include <stdio.h>
+Flow1.c	#include <stdlib.h>
+Flow1.c	int main(int AC, char *AV[]);
+Flow1.c	void Plot(Color *OF, double xs, double ys);
+Flow.c	#define Xs 0x3ff
+Flow.c	#define Ys 0x3ff
+Flow.c	#include "EnBMP.h"
+Flow.c	#include <math.h>
+Flow.c	#include <stdio.h>
+Flow.c	#include <stdlib.h>
+Flow.c	int main(int AC, char *AV[]);
+Flow.c	void Plot(Color *OF, double xs, double ys);
+Focal.c	const int RDel = 3;
+Focal.c	const long Alp = 0x80;
+Focal.c	const long Bet = 0xff;
+Focal.c	const long HI = 0x700;
+Focal.c	#define HW (6*Alp + 7*Bet + 1)
+Focal.c	#include "DeBMP.h"
+Focal.c	#include "EnBMP.h"
+Focal.c	#include <math.h>
+Focal.c	#include <stdio.h>
+Focal.c	#include <stdlib.h>
+Focal.c	int Del[] = { -1, 2, -5, 8, -5, 2, -1 };
+Focal.c	int main(int AC, char *AV[]);
+Focal.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+Focal.c	void EnColor(double U, Color CP);
+Focal.c	void HtoBGR(long H, int *BP, int *GP, int *RP);
+Font.c	byte F0[0x80], F1[0x80], F2[0x80], FA[0x80], Ft[0x80], Fl[0x80], Fa[0x80], Fn[0x80], Fi[0x80], Fs[0x80];
+Font.c	byte f0[8], f1[8], f2[8], fA[8], ft[8], fl[8], fa[8], fn[8], fi[8], fs[8];
+Font.c	byte GetB(byte *Dst, int N, int X, int Y);
+Font.c	byte Temp[0x20];
+Font.c	#include <bios.h>
+Font.c	#include <graph.h>
+Font.c	#include <stdio.h>
+Font.c	#include <stdlib.h>
+Font.c	int Keyboard(void);
+Font.c	int main(void);
+Font.c	typedef unsigned char byte;
+Font.c	void Double(size_t N, byte *Src, byte *Dst);
+Font.c	void PutB(byte *Dst, size_t N, int X, int Y, int B);
+Font.c	void ScrInit(void);
+Font.c	void ScrReset(void);
+Font.c	void ShowB(byte *Src, size_t N, int Y, int X, byte H);
+Glow.c	const double Mag = 200.0;
+Glow.c	const long Alp = 0x80;
+Glow.c	const long Bet = 0xff;
+Glow.c	const long HI = 0x700;
+Glow.c	#define HW (6*Alp + 7*Bet + 1)
+Glow.c	double DeColor(Color CP);
+Glow.c	#include "DeBMP.h"
+Glow.c	#include "EnBMP.h"
+Glow.c	#include <math.h>
+Glow.c	#include <stdio.h>
+Glow.c	#include <stdlib.h>
+Glow.c	int main(int AC, char *AV[]);
+Glow.c	long BGRtoH(long B, long G, long R);
+Glow.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+GM.c	double Dot(Color *IF1, long Xs, long Ys, int nX, int nY, int mX, int mY);
+GM.c	double DotFF(Color *IF0, Color *IF1, long Xs, long Ys);
+GM.c	double InnerFF(double Mu, Color C);
+GM.c	double Phi(double X, int N);
+GM.c	double Shade(Color C);
+GM.c	#include "DeBMP.h"
+GM.c	#include <math.h>
+GM.c	#include <stdio.h>
+GM.c	#include <stdlib.h>
+GM.c	int main(int AC, char *AV[]);
+GM.c	typedef struct Grade { double B, G, R; } *Grade;
+GM.c	void AddDotF(Color *IF0, Color *IF1, long Xs, long Ys, Grade G, int nX, int nY);
+GM.c	void AddInnerF(double Mu, Grade G, Color C, double D);
+Graft.c	const double Bend = 0.5;
+Graft.c	const double Del = 2.0;
+Graft.c	const double Mag = 200.0;
+Graft.c	const double TinyMatch = 0.01;
+Graft.c	const long Alp = 0x80;
+Graft.c	const long Bet = 0xff;
+Graft.c	const long HI = 0x700;
+Graft.c	#define HW (6*Alp + 7*Bet + 1)
+Graft.c	double Aff[3][3];
+Graft.c	double Alignment(struct Color U[3][3], struct Color V[3][3]);
+Graft.c	double FM[3][3];
+Graft.c	double ReMap(long *XP, long *YP, double *UP);
+Graft.c	double Shift[3];
+Graft.c	#include "DeBMP.h"
+Graft.c	#include "EnBMP.h"
+Graft.c	#include <math.h>
+Graft.c	#include <stdio.h>
+Graft.c	#include <stdlib.h>
+Graft.c	int Convert(Color *IF0, long Xs0, long Ys0, Color *IF1, long Xs1, long Ys1, Color *OF, long OXs, long OYs);
+Graft.c	int main(int AC, char *AV[]);
+Graft.c	void EnColor(double U, Color C);
+Graft.c	void HtoBGR(long H, int *BP, int *GP, int *RP);
+Graft.c	void PreCompile(void);
+HalveBMP.c	#include "DeBMP.h"
+HalveBMP.c	#include "EnBMP.h"
+HalveBMP.c	#include <stdio.h>
+HalveBMP.c	#include <stdlib.h>
+HalveBMP.c	int main(int AC, char *AV[]);
+Holo0.c	#include "DeBMP.h"
+Holo0.c	#include <stdio.h>
+Holo0.c	#include <stdlib.h>
+Holo0.c	int main(int AC, char *AV[]);
+Holo0.c	int Valid(long L);
+Holo1.c	#define Deg 6
+Holo1.c	#define Es (1 + 2*Deg)
+Holo1.c	#define Es ((Deg + 1)*(Deg + 2)/2)
+Holo1.c	#else
+Holo1.c	#endif
+Holo1.c	#if 1
+Holo1.c	#include "DeBMP.h"
+Holo1.c	#include "EnBMP.h"
+Holo1.c	#include <math.h>
+Holo1.c	#include <stdio.h>
+Holo1.c	#include <stdlib.h>
+Holo1.c	int Convert(Color *IF, Color *OF, long Xs, long Ys);
+Holo1.c	int main(int AC, char *AV[]);
+Holo1.c	Real MulCC(Grade A, Grade B);
+Holo1.c	Real NormC(struct Grade A);
+Holo1.c	Real N, XX[Es][Es]; struct Grade XY[Es]; Real YY;
+Holo1.c	typedef double Real;
+Holo1.c	typedef struct Grade { Real B, G, R; } *Grade;
+Holo1.c	void AddMulC(Grade A, Real B, struct Grade C);
+Holo1.c	void BegStat(void);
+Holo1.c	void DeGrade(Color C, Grade A);
+Holo1.c	void DivC(Grade A, Real N);
+Holo1.c	void EndStat(void);
+Holo1.c	void EnGrade(Grade A, Color C);
+Holo1.c	void MidStat(Real X, Real Y, Real P, Color C);
+Holo1.c	void Mul2(Real *XP, Real *YP, Real X1, Real Y1);
+Holo1.c	void PowerUp(Real *A, Real X, Real Y);
+Holo1.c	void WriteC(Grade A);
+Holo1.c	void ZeroC(Grade A);
+Holo2.c	double aVX, aVY, aWX, aWY, bV, bW;
+Holo2.c	#include <ctype.h>
+Holo2.c	#include "DeBMP.h"
+Holo2.c	#include "EnBMP.h"
+Holo2.c	#include <math.h>
+Holo2.c	#include <stdio.h>
+Holo2.c	#include <stdlib.h>
+Holo2.c	int main(int AC, char *AV[]);
+Holo2.c	typedef struct Item { long X, Y, V, W; } *Item;
+Holo2.c	unsigned GetItem(FILE *InF, Item It);
+Holo2.c	unsigned GetNum(FILE *InF, long *LP);
+Holo2.c	void UpSt(int Op, double dX, double dY, double dV, double dW);
+Holo.c	double MX, MV, SX, SV, MW, MY, SW, SY;
+Holo.c	#include <ctype.h>
+Holo.c	#include "DeBMP.h"
+Holo.c	#include "EnBMP.h"
+Holo.c	#include <math.h>
+Holo.c	#include <stdio.h>
+Holo.c	#include <stdlib.h>
+Holo.c	int Compile(void);
+Holo.c	int main(int AC, char *AV[]);
+Holo.c	int Zero2(Number2 A);
+Holo.c	long N; Number2 *X, Y, **XX, *XY, YY, *DelX;
+Holo.c	Number2 By, *Mxy;
+Holo.c	Number2 **CMake2C(int Xs, int Ys);
+Holo.c	Number2 Comp2(long double X, long double Y);
+Holo.c	Number2 **Make2C(int Xs, int Ys);
+Holo.c	size_t Es = 4;
+Holo.c	typedef struct Item { long X, Y, V, W; } *Item;
+Holo.c	typedef struct { long double X, Y; } Number2;
+Holo.c	unsigned GetItem(FILE *InF, Item It);
+Holo.c	unsigned GetNum(FILE *InF, long *LP);
+Holo.c	void Add2(Number2 *AP, Number2 B);
+Holo.c	void AddCorr2(Number2 *AP, Number2 B, Number2 C);
+Holo.c	void AddMul2(Number2 *AP, Number2 B, Number2 C);
+Holo.c	void *Allocate(size_t N, size_t dN);
+Holo.c	void *CAllocate(size_t N, size_t dN);
+Holo.c	void Div2(Number2 *AP, Number2 B);
+Holo.c	void DivR2(Number2 *AP, long double R);
+Holo.c	void Free2C(Number2 **XY);
+Holo.c	void Mul2(Number2 *AP, Number2 B);
+Holo.c	void Sub2(Number2 *AP, Number2 B);
+Holo.c	void SubCorr2(Number2 *AP, Number2 B, Number2 C);
+Holo.c	void SubMul2(Number2 *AP, Number2 B, Number2 C);
+Holo.c	void UpSt(int Op, long double dX, long double dY, long double dV, long double dW);
+Interp.c	#include "DeBMP.h"
+Interp.c	#include "EnBMP.h"
+Interp.c	#include <math.h>
+Interp.c	#include <stdio.h>
+Interp.c	#include <stdlib.h>
+Interp.c	int main(int AC, char *AV[]);
+Interp.c	void Convert(Color IR, Color OR, long Xs);
+InvertBMP.c	#include "DeBMP.h"
+InvertBMP.c	#include "EnBMP.h"
+InvertBMP.c	#include <stdio.h>
+InvertBMP.c	#include <stdlib.h>
+InvertBMP.c	int main(int AC, char *AV[]);
+Invert.c	#include "DeBMP.h"
+Invert.c	#include "EnBMP.h"
+Invert.c	#include <stdio.h>
+Invert.c	#include <stdlib.h>
+Invert.c	int main(int AC, char *AV[]);
+JoinBMP.c	ColorImage GetImage(char *Path);
+JoinBMP.c	ColorImage NewColorImage(long Xs, long Ys);
+JoinBMP.c	#include "DeBMP.h"
+JoinBMP.c	#include "EnBMP.h"
+JoinBMP.c	#include <math.h>
+JoinBMP.c	#include <stdio.h>
+JoinBMP.c	#include <stdlib.h>
+JoinBMP.c	int main(int AC, char *AV[]);
+JoinBMP.c	int PutImage(ColorImage Im, char *Path);
+JoinBMP.c	typedef struct ColorImage { Color Map, *Frame; long Xs, Ys; } *ColorImage;
+JoinBMP.c	void FreeColorImage(ColorImage Im);
+KeyStone.c	ColorImage GetImage(char *Path);
+KeyStone.c	ColorImage NewColorImage(long Xs, long Ys);
+KeyStone.c	#include "DeBMP.h"
+KeyStone.c	#include "EnBMP.h"
+KeyStone.c	#include <math.h>
+KeyStone.c	#include <stdio.h>
+KeyStone.c	#include <stdlib.h>
+KeyStone.c	int main(int AC, char *AV[]);
+KeyStone.c	int PutImage(ColorImage Im, char *Path);
+KeyStone.c	long RoundTo(double X);
+KeyStone.c	typedef struct ColorImage { Color Map, *Frame; long Xs, Ys; } *ColorImage;
+KeyStone.c	void FreeColorImage(ColorImage Im);
+Lay2.c	#include "DeBMP.h"
+Lay2.c	#include "EnBMP.h"
+Lay2.c	#include <math.h>
+Lay2.c	#include <stdio.h>
+Lay2.c	#include <stdlib.h>
+Lay2.c	int main(int AC, char *AV[]);
+Lay.c	const long Alp = 0x80;
+Lay.c	const long Bet = 0xff;
+Lay.c	const long HI = 0x700;
+Lay.c	#define HW (6*Alp + 7*Bet + 1)
+Lay.c	double DeColor(Color CP);
+Lay.c	#include "DeBMP.h"
+Lay.c	#include "EnBMP.h"
+Lay.c	#include <math.h>
+Lay.c	#include <stdio.h>
+Lay.c	#include <stdlib.h>
+Lay.c	int main(int AC, char *AV[]);
+Lay.c	long BGRtoH(long B, long G, long R);
+Layer.c	double NearItem(Color CP, Item IP);
+Layer.c	#include "DeBMP.h"
+Layer.c	#include "EnBMP.h"
+Layer.c	#include <math.h>
+Layer.c	#include <stdio.h>
+Layer.c	#include <stdlib.h>
+Layer.c	int Convert(Color *IF, Color *OF, long Xs, long Ys);
+Layer.c	int main(int AC, char *AV[]);
+Layer.c	struct Item { long B, G, R, Rho; };
+Layer.c	typedef struct Item *Item;
+Layer.c	void ClearItem(Item IP);
+Line.c	#include "DeBMP.h"
+Line.c	#include "EnBMP.h"
+Line.c	#include <stdio.h>
+Line.c	#include <stdlib.h>
+Line.c	#include <string.h>
+Line.c	int IsNumeral(char *S);
+Line.c	int main(int AC, char *AV[]);
+Line.c	int Threshold = 0xff;
+Line.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+M1.c	#include "DeBMP.h"
+M1.c	#include "EnBMP.h"
+M1.c	#include <stdio.h>
+M1.c	#include <stdlib.h>
+M1.c	int main(int AC, char *AV[]);
+M1.c	void Convert(Color *IF0, Color *IF1, Color *OF, long Xs, long Ys);
+Make3D.c	const long Alp = 0x80;
+Make3D.c	const long Bet = 0xff;
+Make3D.c	const long HI = 0x700;
+Make3D.c	const unsigned RadR = 20;
+Make3D.c	#define HW (6*Alp + 7*Bet + 1)
+Make3D.c	double DeColor(Color C);
+Make3D.c	#include "DeBMP.h"
+Make3D.c	#include "EnBMP.h"
+Make3D.c	#include <math.h>
+Make3D.c	#include <stdio.h>
+Make3D.c	#include <stdlib.h>
+Make3D.c	int Convert(Color *IF, Color *OF, long Xs, long Ys);
+Make3D.c	int main(int AC, char *AV[]);
+Make3D.c	long BGRtoH(long B, long G, long R);
+Make3D.c	void EnColor(double U, Color C);
+Make3D.c	void HtoBGR(long H, int *BP, int *GP, int *RP);
+Mask0.c	#include "DeBMP.h"
+Mask0.c	#include "EnBMP.h"
+Mask0.c	#include <math.h>
+Mask0.c	#include <stdio.h>
+Mask0.c	#include <stdlib.h>
+Mask0.c	int main(int AC, char *AV[]);
+Mask0.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+Mask1.c	#include "DeBMP.h"
+Mask1.c	#include "EnBMP.h"
+Mask1.c	#include <math.h>
+Mask1.c	#include <stdio.h>
+Mask1.c	#include <stdlib.h>
+Mask1.c	int main(int AC, char *AV[]);
+Mask1.c	void Convert(Color *IF, Color *IFM, Color *OF, long Xs, long Ys);
+Mask2.c	#include "DeBMP.h"
+Mask2.c	#include "EnBMP.h"
+Mask2.c	#include <math.h>
+Mask2.c	#include <stdio.h>
+Mask2.c	#include <stdlib.h>
+Mask2.c	int main(int AC, char *AV[]);
+Mask2.c	void Convert(Color *IF, Color *OF, long Xs, long Ys, int BgB, int BgG, int BgR);
+Mask3.c	#include "DeBMP.h"
+Mask3.c	#include "EnBMP.h"
+Mask3.c	#include <math.h>
+Mask3.c	#include <stdio.h>
+Mask3.c	#include <stdlib.h>
+Mask3.c	int main(int AC, char *AV[]);
+Mask3.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+Mask4.c	#include "DeBMP.h"
+Mask4.c	#include "EnBMP.h"
+Mask4.c	#include <math.h>
+Mask4.c	#include <stdio.h>
+Mask4.c	#include <stdlib.h>
+Mask4.c	int main(int AC, char *AV[]);
+Mask4.c	void Convert(Color *IF0, Color *IF1, Color *IF2, Color *OF, long Xs, long Ys);
+Mask.c	#include <math.h>
+Mask.c	#include <stdio.h>
+Mask.c	#include <stdlib.h>
+Mask.c	int main(int AC, char *AV[]);
+Mask.c	void Mix(int *BP, int *GP, int *RP, int Ratio);
+MaskJoin.c	#include "DeBMP.h"
+MaskJoin.c	#include "EnBMP.h"
+MaskJoin.c	#include <stdio.h>
+MaskJoin.c	#include <stdlib.h>
+MaskJoin.c	int main(int AC, char *AV[]);
+MaskJoin.c	long Round(double D);
+MaskJoin.c	void Convert(Color *IF, Color *IF1, Color *OF, long Xs, long Ys);
+MaskSmear.c	#include "DeBMP.h"
+MaskSmear.c	#include "EnBMP.h"
+MaskSmear.c	#include <math.h>
+MaskSmear.c	#include <stdio.h>
+MaskSmear.c	#include <stdlib.h>
+MaskSmear.c	int main(int AC, char *AV[]);
+MaskSmear.c	long Round(double D);
+M.c	#include "DeBMP.h"
+M.c	#include "EnBMP.h"
+M.c	#include <stdio.h>
+M.c	#include <stdlib.h>
+M.c	int main(int AC, char *AV[]);
+M.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+Min.c	#include "DeBMP.h"
+Min.c	#include "EnBMP.h"
+Min.c	#include <math.h>
+Min.c	#include <stdio.h>
+Min.c	#include <stdlib.h>
+Min.c	int main(int AC, char *AV[]);
+Min.c	void Convert(Color *IF, Color *OF, long Xs, long Ys, double P0, double P1);
+Mix1.c	byte GetB(FILE *InF);
+Mix1.c	#include <stdio.h>
+Mix1.c	#include <stdlib.h>
+Mix1.c	int main(int AC, char *AV[]);
+Mix1.c	typedef unsigned char byte;
+Mix1.c	unsigned GetW(FILE *InF);
+Mix1.c	void PutB(FILE *ExF, byte B);
+Mix1.c	void PutW(FILE *ExF, unsigned W);
+Mix2a.c	const long Xs1 = 116;
+Mix2a.c	const long Ys1 = 10;
+Mix2a.c	#include "DeBMP.h"
+Mix2a.c	#include "EnBMP.h"
+Mix2a.c	#include <math.h>
+Mix2a.c	#include <stdio.h>
+Mix2a.c	#include <stdlib.h>
+Mix2a.c	int Convert(Color *IF, Color *OF, long Xs, long Ys);
+Mix2a.c	int main(int AC, char *AV[]);
+Mix2.c	#include <math.h>
+Mix2.c	#include <stdio.h>
+Mix2.c	int main(void);
+Mix2.c	int Mix(double P, int A, int B);
+Mix3.c	double pA = 1.0;
+Mix3.c	double pB = 0.25;
+Mix3.c	#include <stdio.h>
+Mix3.c	#include <stdlib.h>
+Mix3.c	int main(void);
+Mix3.c	int Mix(int A, int B);
+Mono.c	#include "DeBMP.h"
+Mono.c	#include "EnBMP.h"
+Mono.c	#include <stdio.h>
+Mono.c	#include <stdlib.h>
+Mono.c	int main(int AC, char *AV[]);
+Mono.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+Mx1.c	#include "DeBMP.h"
+Mx1.c	#include "EnBMP.h"
+Mx1.c	#include <stdio.h>
+Mx1.c	#include <stdlib.h>
+Mx1.c	int main(int AC, char *AV[]);
+Mx1.c	void Convert(Color *IF0, Color *IF1, Color *OF, long Xs, long Ys);
+Mx3.c	#include "DeBMP.h"
+Mx3.c	#include "EnBMP.h"
+Mx3.c	#include <math.h>
+Mx3.c	#include <stdio.h>
+Mx3.c	#include <stdlib.h>
+Mx3.c	#include <time.h>
+Mx3.c	int main(int AC, char *AV[]);
+Mx3.c	void Convert(Color IR0, Color IR1, Color OR, long Xs);
+Mx.c	#include "DeBMP.h"
+Mx.c	#include <stdio.h>
+Mx.c	#include <stdlib.h>
+Mx.c	int main(int AC, char *AV[]);
+Mx.c	void Convert(Color *IF, long Xs, long Ys);
+Negate.c	#include "DeBMP.h"
+Negate.c	#include "EnBMP.h"
+Negate.c	#include <stdio.h>
+Negate.c	#include <stdlib.h>
+Negate.c	int main(int AC, char *AV[]);
+Negate.c	void Negate(Color Row, unsigned Xs);
+NormU.c	const long Alp = 0x80;
+NormU.c	const long Bet = 0xff;
+NormU.c	const long HI = 0x700;
+NormU.c	#define Chicago0
+NormU.c	#define HW (6*Alp + 7*Bet + 1)
+NormU.c	double MakeColor(long X, long Xs, Color CP);
+NormU.c	#elif defined(Chicago0)
+NormU.c	#elif defined(Chicago1)
+NormU.c	#else
+NormU.c	#endif
+NormU.c	#if defined(Railroad)
+NormU.c	#include "DeBMP.h"
+NormU.c	#include "EnBMP.h"
+NormU.c	#include <math.h>
+NormU.c	#include <stdio.h>
+NormU.c	#include <stdlib.h>
+NormU.c	int main(int AC, char *AV[]);
+NormU.c	void EnColor(double U, Color C);
+NormU.c	void HtoBGR(long H, int *BP, int *GP, int *RP);
+OverCross.c	#include "DeBMP.h"
+OverCross.c	#include "EnBMP.h"
+OverCross.c	#include <math.h>
+OverCross.c	#include <stdio.h>
+OverCross.c	#include <stdlib.h>
+OverCross.c	int main(int AC, char *AV[]);
+OverCross.c	void Convert(Color *IF, Color *OF, long Xs, long Ys, double P);
+Overlay2.c	ColorImage GetImage(char *Path);
+Overlay2.c	ColorImage NewColorImage(long Xs, long Ys);
+Overlay2.c	#include "DeBMP.h"
+Overlay2.c	#include "EnBMP.h"
+Overlay2.c	#include <math.h>
+Overlay2.c	#include <stdio.h>
+Overlay2.c	#include <stdlib.h>
+Overlay2.c	int main(int AC, char *AV[]);
+Overlay2.c	int PutImage(ColorImage Im, char *Path);
+Overlay2.c	typedef struct ColorImage { Color Map, *Frame; long Xs, Ys; } *ColorImage;
+Overlay2.c	void FreeColorImage(ColorImage Im);
+Overlay2.c	void Overlay(Color *IF, Color *IFY, long IXs, long IYs, Color *OF, long OXs, long OYs, long X0, long Y0);
+OverLay.c	#include <ctype.h>
+Overlay.c	#include "DeBMP.h"
+OverLay.c	#include "DeBMP.h"
+Overlay.c	#include "EnBMP.h"
+OverLay.c	#include "EnBMP.h"
+Overlay.c	#include <stdio.h>
+OverLay.c	#include <stdio.h>
+Overlay.c	#include <stdlib.h>
+OverLay.c	#include <stdlib.h>
+OverLay.c	#include <string.h>
+OverLay.c	int CharToHex(char Ch);
+Overlay.c	int main(int AC, char *AV[]);
+OverLay.c	int main(int AC, char *AV[]);
+Overlay.c	void Convert(Color *IF0, Color *IF1, Color *OF, long Xs, long Ys);
+OverLay.c	void GetColor(Color C, char *S);
+Overlayer.c	#include "DeBMP.h"
+Overlayer.c	#include "EnBMP.h"
+Overlayer.c	#include <math.h>
+Overlayer.c	#include <stdio.h>
+Overlayer.c	#include <stdlib.h>
+Overlayer.c	int main(int AC, char *AV[]);
+Overlayer.c	void Overlayer(Color *IF0, Color *IF1, Color *OF, long Xs0, long Ys0, long Xs1, long Ys1, long dX, long dY);
+Pl0.c	#include "DeBMP.h"
+Pl0.c	#include <math.h>
+Pl0.c	#include <stdio.h>
+Pl0.c	#include <stdlib.h>
+Pl0.c	int main(int AC, char *AV[]);
+Pl0.c	int Valid(int L);
+Pl1.c	#include "DeBMP.h"
+Pl1.c	#include "EnBMP.h"
+Pl1.c	#include <stdio.h>
+Pl1.c	#include <stdlib.h>
+Pl1.c	int main(int AC, char *AV[]);
+Pl1.c	int Valid(int L);
+Pl1.c	struct { double U; unsigned B, G, R; } Tab[];
+Pl1.c	unsigned Ts = sizeof Tab/sizeof Tab[0];
+Pl1.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+Pl1.c	void Quantize(Color IC, Color OC);
+Pl2.c	#include "DeBMP.h"
+Pl2.c	#include "EnBMP.h"
+Pl2.c	#include <stdio.h>
+Pl2.c	#include <stdlib.h>
+Pl2.c	int main(int AC, char *AV[]);
+Pl2.c	int Valid(int L);
+Pl2.c	struct { unsigned B0, G0, R0, B1, G1, R1; } Tab[];
+Pl2.c	unsigned Ts = sizeof Tab/sizeof Tab[0];
+Pl2.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+Pl2.c	void Quantize(Color IC, Color OC);
+PlumbLine.c	#include "DeBMP.h"
+PlumbLine.c	#include <math.h>
+PlumbLine.c	#include <stdio.h>
+PlumbLine.c	#include <stdlib.h>
+PlumbLine.c	int main(int AC, char *AV[]);
+PlumbLine.c	int Valid(int L);
+Poster.c	char *Poster[];
+Poster.c	const int Xs = 6;
+Poster.c	const int Ys = 6;
+Poster.c	#define Black 0
+Poster.c	#define Brown 9
+Poster.c	#define DarkBlue 7
+Poster.c	#define DarkGreen 6
+Poster.c	#define DarkRed 1
+Poster.c	#define EndPoster (Poster + sizeof Poster/sizeof Poster[0])
+Poster.c	#define EndTab (ColorTab + sizeof ColorTab/sizeof ColorTab[0])
+Poster.c	#define LightBlue  10
+Poster.c	#define LightGreen  5
+Poster.c	#define LightRed 2
+Poster.c	#define Orange 3
+Poster.c	#define Purple 8
+Poster.c	#define White 11
+Poster.c	#define Yellow 4
+Poster.c	#include <conio.h>
+Poster.c	#include <graph.h>
+Poster.c	#include "screen.h"
+Poster.c	int GetColor(char Sym);
+Poster.c	int main(void);
+Poster.c	struct ColorItem { char Sym, Color; };
+Poster.c	struct ColorItem ColorTab[];
+Poster.c	void NewColors(void);
+Project.c	const double Degree = M_PI/180.0;
+Project.c	const double DelR = 0.5;
+Project.c	const double Mag = 200.0;
+Project.c	const int Radius = 25;
+Project.c	const long Alp = 0x80;
+Project.c	const long Bet = 0xff;
+Project.c	#define HI 0x700
+Project.c	#define HW (6*Alp + 7*Bet + 1)
+Project.c	double Absorb(double DelX, double DelY, double DelU, double dU);
+Project.c	double DeColor(Color C);
+Project.c	double SinCos(double Om, double *SinP, double *CosP);
+Project.c	#include "DeBMP.h"
+Project.c	#include "EnBMP.h"
+Project.c	#include <math.h>
+Project.c	#include <stdio.h>
+Project.c	#include <stdlib.h>
+Project.c	int Convert(Color *IF, Color *IFX, double IX0, double IY0, long IXs, long IYs, Color *OF, double OX0, double OY0, long OXs, long OYs, double Ax, double Ay, double Az, double Bearing, double Pitch, double Yaw, double Zoom);
+Project.c	int main(int AC, char *AV[]);
+Project.c	int PreCompile(double Radius);
+Project.c	long BGRtoH(long B, long G, long R);
+Project.c	Segment SegTab = 0; unsigned Segs = 0;
+Project.c	typedef struct Segment { long dX, dY; } *Segment;
+Project.c	void Clip(double Lo, double Hi, double Off, double Div, double *LoP, double *HiP);
+Pyth.c	#define MAG 4
+Pyth.c	FILE *ExF;
+Pyth.c	#include <bios.h>
+Pyth.c	#include <graph.h>
+Pyth.c	#include <stdio.h>
+Pyth.c	#include <stdlib.h>
+Pyth.c	int Color[6] = { 14, 10, 11, 9, 13, 12 };
+Pyth.c	int Keyboard(void);
+Pyth.c	int Line(point A, point B, unsigned Color);
+Pyth.c	int main(void);
+Pyth.c	int Test(int x, int y);
+Pyth.c	int Tri(point A, point B, point C, point X);
+Pyth.c	long Hue[0x10];
+Pyth.c	long X1s, Y1s;
+Pyth.c	long Xs, Ys;
+Pyth.c	point A = {  0,  0 };
+Pyth.c	point B = { 12,  0 };
+Pyth.c	point C = { 16,  0 };
+Pyth.c	point D = { 28,  0 },
+Pyth.c	typedef struct { int x, y; } point;
+Pyth.c	typedef unsigned char byte;
+Pyth.c	void Convert(int *XP, int *YP);
+Pyth.c	void Mag(point *AP, unsigned Scale);
+Pyth.c	void PutC(FILE *ExF, byte B);
+Pyth.c	void PutL(FILE *ExF, unsigned long L);
+Pyth.c	void PutW(FILE *ExF, unsigned W);
+Pyth.c	void Rescale(void);
+Pyth.c	void ScrInit(void);
+Pyth.c	void ScrReset(void);
+Ray.c	const double Mag = 200.0;
+Ray.c	const long Alp = 0x80;
+Ray.c	const long Bet = 0xff;
+Ray.c	const long HI = 0x700;
+Ray.c	#define HW (6*Alp + 7*Bet + 1)
+Ray.c	double DeColor(Color C);
+Ray.c	#include "DeBMP.h"
+Ray.c	#include "EnBMP.h"
+Ray.c	#include <math.h>
+Ray.c	#include <stdio.h>
+Ray.c	#include <stdlib.h>
+Ray.c	int main(int AC, char *AV[]);
+Ray.c	long BGRtoH(long B, long G, long R);
+Ray.c	struct Item { double W, X, Y, Z, Mask; int Skip; };
+Ray.c	typedef struct Item *Item;
+Ray.c	void Compile(Color *IFX, Color *IFY, Item *OF, long Xs, long Ys, double Nx, double Ny, double Nz);
+Ray.c	void Convert(Item *AdSF, Item *DeSF, Color *ExCF, long Xs, long Ys, double MinB, double MinG, double MinR);
+ReC.c	#include "DeBMP.h"
+ReC.c	#include "EnBMP.h"
+ReC.c	#include <stdio.h>
+ReC.c	#include <stdlib.h>
+ReC.c	int main(int AC, char *AV[]);
+ReC.c	void Convert(Color *IF, long Xs, long Ys);
+ReColor.c	double gX[3], bX[3], gXX[3], bXX[3];
+ReColor.c	#include "DeBMP.h"
+ReColor.c	#include "EnBMP.h"
+ReColor.c	#include <math.h>
+ReColor.c	#include <stdio.h>
+ReColor.c	#include <stdlib.h>
+ReColor.c	int main(int AC, char *AV[]);
+ReColor.c	void Compile(Color *IF, Color *OF, long Xs, long Ys);
+ReColor.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+ReColor.c	void DeColor(double H[3], double *BP, double *GP, double *RP);
+ReColor.c	void EnColor(double B, double G, double R, double H[3]);
+ReColor.c	void ReColor(double *BP, double *GP, double *RP);
+ReJoin.c	#include "DeBMP.h"
+ReJoin.c	#include "EnBMP.h"
+ReJoin.c	#include <math.h>
+ReJoin.c	#include <stdio.h>
+ReJoin.c	#include <stdlib.h>
+ReJoin.c	int main(int AC, char *AV[]);
+ReJoin.c	long Round(double D);
+ReJoin.c	void GetF(Color R, double *F, long Xs);
+ReJoin.c	void MixRow(Color R0, double *FR0, Color R1, double *FR1, long Xs);
+ReLight.c	#include "DeBMP.h"
+ReLight.c	#include "EnBMP.h"
+ReLight.c	#include <math.h>
+ReLight.c	#include <stdio.h>
+ReLight.c	#include <stdlib.h>
+ReLight.c	#include <time.h>
+ReLight.c	int Compile(Color *IF, Color *OF, long Xs, long Ys);
+ReLight.c	int main(int AC, char *AV[]);
+ReLight.c	unsigned ReY[0x100];
+ReLight.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+ReLight.c	void DeColor(double Y, double *BP, double *GP, double *RP);
+ReLight.c	void EnColor(double B, double G, double R, double *YP);
+ReLight.c	void ReColor(double *BP, double *GP, double *RP);
+ReMap.c	const long Alp = 0x80;
+ReMap.c	const long Bet = 0xff;
+ReMap.c	const long HI = 0x700;
+ReMap.c	#define HW (6*Alp + 7*Bet + 1)
+ReMap.c	double DeColor(Color C);
+ReMap.c	#include "DeBMP.h"
+ReMap.c	#include "EnBMP.h"
+ReMap.c	#include <math.h>
+ReMap.c	#include <stdio.h>
+ReMap.c	#include <stdlib.h>
+ReMap.c	int main(int AC, char *AV[]);
+ReMap.c	long BGRtoH(long B, long G, long R);
+ReMap.c	void Convert(Color *F, long Xs, long Ys);
+ReMap.c	void EnColor(double U, Color C);
+ReMap.c	void HtoBGR(long H, int *BP, int *GP, int *RP);
+ReNorm.c	const double UMin = 0.223214;
+ReNorm.c	const double Z1 = 200.0;
+ReNorm.c	const long Alp = 0x80;
+ReNorm.c	const long Bet = 0xff;
+ReNorm.c	#define HI 0x700
+ReNorm.c	#define HW (6*Alp + 7*Bet + 1)
+ReNorm.c	double DeColor(Color C);
+ReNorm.c	double Grad(double T);
+ReNorm.c	#include "DeBMP.h"
+ReNorm.c	#include "EnBMP.h"
+ReNorm.c	#include <math.h>
+ReNorm.c	#include <stdio.h>
+ReNorm.c	#include <stdlib.h>
+ReNorm.c	int main(int AC, char *AV[]);
+ReNorm.c	long BGRtoH(long B, long G, long R);
+ReNorm.c	long Round(double D);
+ReNorm.c	void GetU(Color R, double *U, long Xs);
+ReNorm.c	void MixRow(Color R0, double *UR0, Color R1, double *UR1, long Xs, unsigned Method);
+RePaint2.c	bool Tiny(double X);
+RePaint2.c	ColorImage GetImage(char *Path);
+RePaint2.c	#define FS 3
+RePaint2.c	#define NS 3
+RePaint2.c	#include "DeBMP.h"
+RePaint2.c	#include "EnBMP.h"
+RePaint2.c	#include <math.h>
+RePaint2.c	#include <stdio.h>
+RePaint2.c	#include <stdlib.h>
+RePaint2.c	int AddStats(ColorImage Im, ColorImage ImY, Stat SG, Stat SB);
+RePaint2.c	int CompileStat(Stat S);
+RePaint2.c	int Convert(ColorImage Im, ColorImage ImY, Stat SG, Stat SB);
+RePaint2.c	int main(int AC, char *AV[]);
+RePaint2.c	typedef struct ColorImage { unsigned Xs, Ys; Color *Frame; } *ColorImage;
+RePaint2.c	typedef struct Stat { double nN, nB, nG, nR, nBB, nBG, nBR, nGG, nGR, nRR; double Mu[NS], Lam[FS], Vec[FS][NS]; } *Stat;
+RePaint2.c	void AddStat(Stat S, double dN, double B, double G, double R);
+RePaint2.c	void ClearStat(Stat S);
+RePaint2.c	void Extract(double Sig[NS][NS], double EVal[FS], double EVec[FS][NS]);
+RePaint2.c	void FreeColorImage(ColorImage Im);
+RePaint2.c	void NormalizeStat(Stat SG, Stat SB);
+RePaint2.c	void ReColor(Stat SG, Stat SB, double *BP, double *GP, double *RP);
+RePaint.c	bool Match(Color C0, Color C1);
+RePaint.c	bool Tiny(double X);
+RePaint.c	#define FS 3
+RePaint.c	#define NS 3
+RePaint.c	double MuB[NS], LamB[FS], VecB[FS][NS];
+RePaint.c	double MuG[NS], LamG[FS], VecG[FS][NS];
+RePaint.c	#include "DeBMP.h"
+RePaint.c	#include "EnBMP.h"
+RePaint.c	#include <math.h>
+RePaint.c	#include <stdio.h>
+RePaint.c	#include <stdlib.h>
+RePaint.c	int main(int AC, char *AV[]);
+RePaint.c	void Adjust(double LamG[FS], double VecG[FS][NS], double LamB[FS], double VecB[FS][NS]);
+RePaint.c	void *Allocate(size_t M, size_t N);
+RePaint.c	void Compile(Color *IF, Color *OF, long Xs, long Ys, Color Mask, double Mu[NS], double Lam[FS], double Vec[FS][NS]);
+RePaint.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+RePaint.c	void Extract(double Sig[NS][NS], double EVal[FS], double EVec[FS][NS]);
+RePaint.c	void ReColor(double *BP, double *GP, double *RP);
+Repair.c	#include "DeBMP.h"
+Repair.c	#include "EnBMP.h"
+Repair.c	#include <stdio.h>
+Repair.c	#include <stdlib.h>
+Repair.c	int DTab[][2];
+Repair.c	int main(int AC, char *AV[]);
+Repair.c	unsigned Ds = sizeof DTab/sizeof DTab[0];
+Repair.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+ReRed.c	#include "DeBMP.h"
+ReRed.c	#include "EnBMP.h"
+ReRed.c	#include <stdio.h>
+ReRed.c	#include <stdlib.h>
+ReRed.c	int main(int AC, char *AV[]);
+ReScale.c	double Rail01(double X);
+ReScale.c	#include "DeBMP.h"
+ReScale.c	#include "EnBMP.h"
+ReScale.c	#include <math.h>
+ReScale.c	#include <stdio.h>
+ReScale.c	#include <stdlib.h>
+ReScale.c	int main(int AC, char *AV[]);
+ReScale.c	int ReScale(Color *IF, long IXs, long IYs, Color *OF, long OXs, long OYs, double Xs, double Ys);
+ReScale.c	long Max(long A, long B);
+ReScale.c	long Min(long A, long B);
+ReScale.c	long RoundDn(double X);
+ReScale.c	long RoundTo(double X);
+ReScale.c	long RoundUp(double X);
+ReSpeck.c	#include "DeBMP.h"
+ReSpeck.c	#include "EnBMP.h"
+ReSpeck.c	#include <math.h>
+ReSpeck.c	#include <stdio.h>
+ReSpeck.c	#include <stdlib.h>
+ReSpeck.c	#include <time.h>
+ReSpeck.c	int Compile(Color *IF, Color *OF, long Xs, long Ys);
+ReSpeck.c	int main(int AC, char *AV[]);
+ReSpeck.c	unsigned ReX[3][0x100];
+ReSpeck.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+ReSpeck.c	void DeColor(double H[3], double *BP, double *GP, double *RP);
+ReSpeck.c	void EnColor(double B, double G, double R, double H[3]);
+ReSpeck.c	void ReColor(double *BP, double *GP, double *RP);
+ReSprite0.c	bool AddLayer(char *PathY, char *PathFG, char *PathBG, ColorImage ImBG, int Map, char Layer);
+ReSprite0.c	bool AddStats(ColorImage Im, ColorImage ImY, long *Class, int Src, int Map, char Layer);
+ReSprite0.c	bool Convert(char *PathIn, char *PathY, char *PathEx, int Map, char Layer, int Red);
+ReSprite0.c	ColorImage GetImage(char *Path);
+ReSprite0.c	#else
+ReSprite0.c	#endif
+ReSprite0.c	#ifdef CCIR601_1
+ReSprite0.c	#include "DeBMP.h"
+ReSprite0.c	#include "EnBMP.h"
+ReSprite0.c	#include <math.h>
+ReSprite0.c	#include <stdio.h>
+ReSprite0.c	#include <stdlib.h>
+ReSprite0.c	int CompileStat(Stat S);
+ReSprite0.c	int main(void);
+ReSprite0.c	long *Classify(ColorImage Im, int Map, char Layer);
+ReSprite0.c	long DeRef(long *Tab, long Ts, long T);
+ReSprite0.c	struct Item Tab[];
+ReSprite0.c	typedef struct ColorImage { unsigned Xs, Ys; Color *Frame; } *ColorImage;
+ReSprite0.c	typedef struct Item { char *Name; double dX0, dY0, X0, Y0, U0; char Layer0; long cX0, cY0; double dX1, dY1, X1, Y1, U1; char Layer1; long cX1, cY1; struct Stat BBuf, GBuf; } *Item;
+ReSprite0.c	typedef struct Stat { double N, X[3], XX[3]; } *Stat;
+ReSprite0.c	unsigned Ts = sizeof Tab/sizeof Tab[0];
+ReSprite0.c	void AddStat(Stat S, double dN, double B, double G, double R);
+ReSprite0.c	void ClearStat(Stat S);
+ReSprite0.c	void DeColor(double H[3], double *BP, double *GP, double *RP);
+ReSprite0.c	void EnColor(double B, double G, double R, double H[3]);
+ReSprite0.c	void FreeColorImage(ColorImage Im);
+ReSprite0.c	void ReColor(Stat SG, Stat SB, double *BP, double *GP, double *RP);
+ReSprite1.c	bool AddLayer(char *PathY, char *PathFG, char *PathBG, ColorImage ImBG, int Map, char Layer);
+ReSprite1.c	bool AddStats(ColorImage Im, ColorImage ImY, long *Class, int Src, int Map, char Layer);
+ReSprite1.c	bool Convert(char *PathIn, char *PathY, char *PathEx, int Map, char Layer, int Red);
+ReSprite1.c	bool Tiny(double X);
+ReSprite1.c	ColorImage GetImage(char *Path);
+ReSprite1.c	#define FS 3
+ReSprite1.c	#define NS 3
+ReSprite1.c	#include "DeBMP.h"
+ReSprite1.c	#include "EnBMP.h"
+ReSprite1.c	#include <math.h>
+ReSprite1.c	#include <stdio.h>
+ReSprite1.c	#include <stdlib.h>
+ReSprite1.c	int CompileStat(Stat S);
+ReSprite1.c	int main(void);
+ReSprite1.c	long *Classify(ColorImage Im, int Map, char Layer);
+ReSprite1.c	long DeRef(long *Tab, long Ts, long T);
+ReSprite1.c	struct Item Tab[];
+ReSprite1.c	typedef struct ColorImage { unsigned Xs, Ys; Color *Frame; } *ColorImage;
+ReSprite1.c	typedef struct Item { char *Name; double dX0, dY0, X0, Y0, U0; char Layer0; long cX0, cY0; double dX1, dY1, X1, Y1, U1; char Layer1; long cX1, cY1; struct Stat BBuf, GBuf; } *Item;
+ReSprite1.c	typedef struct Stat { double nN, nB, nG, nR, nBB, nBG, nBR, nGG, nGR, nRR; double Mu[NS], Lam[FS], Vec[FS][NS]; } *Stat;
+ReSprite1.c	unsigned Ts = sizeof Tab/sizeof Tab[0];
+ReSprite1.c	void AddStat(Stat S, double dN, double B, double G, double R);
+ReSprite1.c	void ClearStat(Stat S);
+ReSprite1.c	void Extract(double Sig[NS][NS], double EVal[FS], double EVec[FS][NS]);
+ReSprite1.c	void FreeColorImage(ColorImage Im);
+ReSprite1.c	void NormalizeStat(Stat SG, Stat SB);
+ReSprite1.c	void ReColor(Stat SG, Stat SB, double *BP, double *GP, double *RP);
+ReSprite2.c	bool AddLayer(char *PathY, char *PathFG, char *PathBG, ColorImage ImBG, int Map, char Layer);
+ReSprite2.c	bool AddStats(ColorImage Im, ColorImage ImY, long *Class, int Src, int Map, char Layer);
+ReSprite2.c	bool Convert(char *PathIn, char *PathY, char *PathEx, int Map, char Layer, int Red);
+ReSprite2.c	ColorImage GetImage(char *Path);
+ReSprite2.c	const unsigned NS = 3;
+ReSprite2.c	#include "DeBMP.h"
+ReSprite2.c	#include "EnBMP.h"
+ReSprite2.c	#include <math.h>
+ReSprite2.c	#include <stdio.h>
+ReSprite2.c	#include <stdlib.h>
+ReSprite2.c	int CompileStat(Stat S);
+ReSprite2.c	int main(void);
+ReSprite2.c	long *Classify(ColorImage Im, int Map, char Layer);
+ReSprite2.c	long DeRef(long *Tab, long Ts, long T);
+ReSprite2.c	struct Item Tab[];
+ReSprite2.c	typedef struct ColorImage { unsigned Xs, Ys; Color *Frame; } *ColorImage;
+ReSprite2.c	typedef struct Item { char *Name; double dX0, dY0, X0, Y0, U0; char Layer0; long cX0, cY0; double dX1, dY1, X1, Y1, U1; char Layer1; long cX1, cY1; struct Stat BBuf, GBuf; } *Item;
+ReSprite2.c	typedef struct Stat { double ReX[3][0x100]; } *Stat;
+ReSprite2.c	unsigned Ts = sizeof Tab/sizeof Tab[0];
+ReSprite2.c	void AddStat(Stat S, double dN, double B, double G, double R);
+ReSprite2.c	void ClearStat(Stat S);
+ReSprite2.c	void DeColor(double H[3], double *BP, double *GP, double *RP);
+ReSprite2.c	void EnColor(double B, double G, double R, double H[3]);
+ReSprite2.c	void FreeColorImage(ColorImage Im);
+ReSprite2.c	void NormalizeStat(Stat SG, Stat SB);
+ReSprite2.c	void ReColor(Stat SG, Stat SB, double *BP, double *GP, double *RP);
+ReSt.c	#include "DeBMP.h"
+ReSt.c	#include "EnBMP.h"
+ReSt.c	#include <stdio.h>
+ReSt.c	#include <stdlib.h>
+ReSt.c	int main(int AC, char *AV[]);
+ReSt.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+ReStereo.c	ColorImage GetImage(char *Path);
+ReStereo.c	ColorImage NewColorImage(long Xs, long Ys);
+ReStereo.c	const double Degree = M_PI/180.0;
+ReStereo.c	const double Mag = 200.0;
+ReStereo.c	const double TwoPi = 2.0*M_PI;
+ReStereo.c	const long Alp = 0x80;
+ReStereo.c	const long Bet = 0xff;
+ReStereo.c	#define HI 0x700
+ReStereo.c	#define HW (6*Alp + 7*Bet + 1)
+ReStereo.c	double DeColor(Color C);
+ReStereo.c	double SinCos(double Om, double *SinP, double *CosP);
+ReStereo.c	#else
+ReStereo.c	#endif
+ReStereo.c	#if 1
+ReStereo.c	#include "DeBMP.h"
+ReStereo.c	#include "EnBMP.h"
+ReStereo.c	#include <math.h>
+ReStereo.c	#include <stdio.h>
+ReStereo.c	#include <stdlib.h>
+ReStereo.c	int Convert(Color *IF, Color *IFX, long IXs, long IYs, Color *OF, Color *OFX, long OXs, long OYs, double oX0, double oY0, int DepthMap, double Yaw, double Bearing, double Scale, double Ax, double Ay, double Az);
+ReStereo.c	int main(int AC, char *AV[]);
+ReStereo.c	int PutImage(ColorImage Im, char *Path);
+ReStereo.c	int ReMap(double *XP, double *YP, double *UP, double SnY, double CsY, double SnB, double CsB, double Scale, double Ax, double Ay, double Az);
+ReStereo.c	Item PreCompile(long *DsP);
+ReStereo.c	long BGRtoH(int B, int G, int R);
+ReStereo.c	struct Item { long X, Y; };
+ReStereo.c	struct Item { long X, Y; double W; };
+ReStereo.c	typedef struct ColorImage { Color *Frame; long Xs, Ys; } *ColorImage;
+ReStereo.c	typedef struct Item *Item;
+ReStereo.c	void EnColor(double U, Color C);
+ReStereo.c	void FreeColorImage(ColorImage Im);
+ReStereo.c	void HtoBGR(long H, int *BP, int *GP, int *RP);
+ReStereo.c	void ReSize(Color *IFX, long IXs, long IYs, double *LoXP, double *LoYP, double *HiXP, double *HiYP, double Yaw, double Bearing, double Scale, double Ax, double Ay, double Az);
+ReT.c	const double Rough = 0.5;
+ReT.c	const double Tiny = 0.0000001;
+ReT.c	#define ELEMS (4*WIDTH*(WIDTH + 1) + 1)
+ReT.c	#define MID_EL (2*WIDTH*(WIDTH + 1))
+ReT.c	#define WIDTH 3
+ReT.c	double mXY[3][ELEMS], bY[3], delY[3];
+ReT.c	double Random(double Max);
+ReT.c	#include "DeBMP.h"
+ReT.c	#include "EnBMP.h"
+ReT.c	#include <math.h>
+ReT.c	#include <stdio.h>
+ReT.c	#include <stdlib.h>
+ReT.c	#include <time.h>
+ReT.c	int main(int AC, char *AV[]);
+ReT.c	void Compile(Color *IF, Color *OF, long Xs, long Ys);
+ReT.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+ReT.c	void DeColor(double C[3], double *BP, double *GP, double *RP);
+ReT.c	void EnColor(double B, double G, double R, double C[3]);
+ReT.c	void InitRandom(void);
+ReT.c	void ReColor(Color *IF, long X, long Y, long Xs, long Ys, double *BP, double *GP, double *RP);
+ReTex.c	const double Rough = 0.25;
+ReTex.c	double gX[3], gXX[3];
+ReTex.c	double Random(double Max);
+ReTex.c	#include "DeBMP.h"
+ReTex.c	#include "EnBMP.h"
+ReTex.c	#include <math.h>
+ReTex.c	#include <stdio.h>
+ReTex.c	#include <stdlib.h>
+ReTex.c	#include <time.h>
+ReTex.c	int main(int AC, char *AV[]);
+ReTex.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+ReTex.c	void DeColor(double H[3], double *BP, double *GP, double *RP);
+ReTex.c	void EnColor(double B, double G, double R, double H[3]);
+ReTex.c	void InitRandom(void);
+ReTex.c	void ReColor(double *BP, double *GP, double *RP);
+ReX.c	#include "DeBMP.h"
+ReX.c	#include "EnBMP.h"
+ReX.c	#include <stdio.h>
+ReX.c	#include <stdlib.h>
+ReX.c	int main(int AC, char *AV[]);
+Rotate.c	byte GetB(FILE *InF);
+Rotate.c	byte **Table;
+Rotate.c	byte xRed[0x10], xGrn[0x10], xBlu[0x10];
+Rotate.c	#include <bios.h>
+Rotate.c	#include <graph.h>
+Rotate.c	#include <stdio.h>
+Rotate.c	#include <stdlib.h>
+Rotate.c	int main(int AC, char *AV[]);
+Rotate.c	typedef unsigned char byte;
+Rotate.c	unsigned GetW(FILE *InF);
+Rotate.c	unsigned long Color[0x10];
+Rotate.c	unsigned long GetL(FILE *InF);
+Rotate.c	void PutB(FILE *ExF, byte B);
+Rotate.c	void PutL(FILE *ExF, unsigned long L);
+Rotate.c	void PutW(FILE *ExF, unsigned W);
+Rotate.c	void SetTable(unsigned Xs, unsigned Ys);
+Saturate.c	#include "DeBMP.h"
+Saturate.c	#include "EnBMP.h"
+Saturate.c	#include <math.h>
+Saturate.c	#include <stdio.h>
+Saturate.c	#include <stdlib.h>
+Saturate.c	#include <time.h>
+Saturate.c	int main(int AC, char *AV[]);
+Saturate.c	void Convert(Color *IF0, Color *IF1, long Xs, long Ys);
+ScaleEx.c	#include "DeBMP.h"
+ScaleEx.c	#include "EnBMP.h"
+ScaleEx.c	#include <math.h>
+ScaleEx.c	#include <stdio.h>
+ScaleEx.c	#include <stdlib.h>
+ScaleEx.c	int main(int AC, char *AV[]);
+ScaleEx.c	int ScaleEx(Color *IF, long IXs, long IYs, Color *OF, long OXs, long OYs, double X0, double Y0, double Xs, double Ys);
+ScaleEx.c	long RoundDn(double X);
+ScaleEx.c	long RoundTo(double X);
+ScaleEx.c	long RoundUp(double X);
+ScaleIn.c	#include "DeBMP.h"
+ScaleIn.c	#include "EnBMP.h"
+ScaleIn.c	#include <math.h>
+ScaleIn.c	#include <stdio.h>
+ScaleIn.c	#include <stdlib.h>
+ScaleIn.c	int main(int AC, char *AV[]);
+ScaleIn.c	int ScaleIn(Color *IF, long IXs, long IYs, Color *OF, long OXs, long OYs, double OX0, double OX1, double OY0, double OY1);
+ScaleIn.c	long RoundDn(double X);
+ScaleIn.c	long RoundTo(double X);
+ScaleIn.c	long RoundUp(double X);
+ScaleInM.c	ColorImage GetImage(char *Path);
+ScaleInM.c	ColorImage NewColorImage(long Xs, long Ys);
+ScaleInM.c	#include "DeBMP.h"
+ScaleInM.c	#include "EnBMP.h"
+ScaleInM.c	#include <math.h>
+ScaleInM.c	#include <stdio.h>
+ScaleInM.c	#include <stdlib.h>
+ScaleInM.c	int main(int AC, char *AV[]);
+ScaleInM.c	int PutImage(ColorImage Im, char *Path);
+ScaleInM.c	int ScaleIn(ColorImage Im0, ColorImage Im1, double OX0, double OX1, double OY0, double OY1);
+ScaleInM.c	long RoundDn(double X);
+ScaleInM.c	long RoundTo(double X);
+ScaleInM.c	long RoundUp(double X);
+ScaleInM.c	typedef struct ColorImage { Color Map, *Frame; long Xs, Ys; } *ColorImage;
+ScaleInM.c	void FreeColorImage(ColorImage Im);
+Sched.c	const int Rate = 25;
+Sched.c	#include "DeBMP.h"
+Sched.c	#include "EnBMP.h"
+Sched.c	#include <math.h>
+Sched.c	#include <stdio.h>
+Sched.c	#include <stdlib.h>
+Sched.c	int main(int AC, char *AV[]);
+Sched.c	int ReScale(char Lab, int F, Color *IF, long IXs, long IYs, double IX0, double IX1, double IY0, double IY1, Color *OF, double *OS, long OXs, long OYs);
+Sched.c	int ScheduleB(Color *IF, Color *OF, double *OS, long IXs, long IYs, long OXs, long OYs);
+Sched.c	int ScheduleC(Color *IF, Color *OF, double *OS, long IXs, long IYs, long OXs, long OYs);
+Seg3Da.c	const long Alp = 0x80;
+Seg3Da.c	const long Bet = 0xff;
+Seg3Da.c	const long HI = 0x700;
+Seg3Da.c	#include "DeBMP.h"
+Seg3Da.c	#include "EnBMP.h"
+Seg3Da.c	#include <math.h>
+Seg3Da.c	#include <stdio.h>
+Seg3Da.c	#include <stdlib.h>
+Seg3Da.c	int main(int AC, char *AV[]);
+Seg3Da.c	long BGRtoH(Color C);
+Seg3Da.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+Seg3D.c	const double Mag = 200.0;
+Seg3D.c	const long Alp = 0x80;
+Seg3D.c	const long Bet = 0xff;
+Seg3D.c	const long HI = 0x700;
+Seg3D.c	#define HW (6*Alp + 7*Bet + 1)
+Seg3D.c	double DeColor(Color C);
+Seg3D.c	double Sn(double U0, double U1);
+Seg3D.c	#include "DeBMP.h"
+Seg3D.c	#include "EnBMP.h"
+Seg3D.c	#include <math.h>
+Seg3D.c	#include <stdio.h>
+Seg3D.c	#include <stdlib.h>
+Seg3D.c	int main(int AC, char *AV[]);
+Seg3D.c	long BGRtoH(long B, long G, long R);
+Seg3D.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+Seg.c	const double Mag = 200.0;
+Seg.c	const long Alp = 0x80;
+Seg.c	const long Bet = 0xff;
+Seg.c	const long HI = 0x700;
+Seg.c	#define HW (6*Alp + 7*Bet + 1)
+Seg.c	double DeColor(Color C);
+Seg.c	#include "DeBMP.h"
+Seg.c	#include "EnBMP.h"
+Seg.c	#include <math.h>
+Seg.c	#include <stdio.h>
+Seg.c	#include <stdlib.h>
+Seg.c	int main(int AC, char *AV[]);
+Seg.c	long BGRtoH(long B, long G, long R);
+Seg.c	void Convert(Color *Frame, long Xs, long Ys);
+SegMix.c	const double Mag = 200.0;
+SegMix.c	const long Alp = 0x80;
+SegMix.c	const long Bet = 0xff;
+SegMix.c	const long HI = 0x700;
+SegMix.c	#define HW (6*Alp + 7*Bet + 1)
+SegMix.c	double DeColor(Color CP);
+SegMix.c	#include "DeBMP.h"
+SegMix.c	#include "EnBMP.h"
+SegMix.c	#include <math.h>
+SegMix.c	#include <stdio.h>
+SegMix.c	#include <stdlib.h>
+SegMix.c	int main(int AC, char *AV[]);
+SegMix.c	long BGRtoH(long B, long G, long R);
+SegMix.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+Shade.c	const double Z1 = 200.0;
+Shade.c	const long Alp = 0x80;
+Shade.c	const long Bet = 0xff;
+Shade.c	const long HI = 0x700;
+Shade.c	#define HW (6*Alp + 7*Bet + 1)
+Shade.c	double DeColor(Color C);
+Shade.c	double Nx = -0.8;
+Shade.c	double Ny = -0.85;
+Shade.c	double Nz = 0.8;
+Shade.c	#include "DeBMP.h"
+Shade.c	#include "EnBMP.h"
+Shade.c	#include <math.h>
+Shade.c	#include <stdio.h>
+Shade.c	#include <stdlib.h>
+Shade.c	int main(int AC, char *AV[]);
+Shade.c	long BGRtoH(long B, long G, long R);
+Shade.c	void GetU(Color R, double *U, long Xs);
+Shade.c	void MixRow(Color R, long Xs, long Y, double dN, double N0);
+Shadow.c	const double Z1 = 200.0;
+Shadow.c	const long Alp = 0x80;
+Shadow.c	const long Bet = 0xff;
+Shadow.c	#define HI 0x700
+Shadow.c	#define HW (6*Alp + 7*Bet + 1)
+Shadow.c	double DeColor(Color C);
+Shadow.c	double Grad(double T);
+Shadow.c	double Nx = -0.8;
+Shadow.c	double Ny = -0.85;
+Shadow.c	double Nz = 0.8;
+Shadow.c	#include "DeBMP.h"
+Shadow.c	#include "EnBMP.h"
+Shadow.c	#include <math.h>
+Shadow.c	#include <stdio.h>
+Shadow.c	#include <stdlib.h>
+Shadow.c	int main(int AC, char *AV[]);
+Shadow.c	long BGRtoH(long B, long G, long R);
+Shadow.c	void GetU(Color R, double *U, long Xs);
+Shadow.c	void MixRow(Color R0, double *UR0, Color R1, double *UR1, long Xs, long Y, double dN, double N0);
+Shape.c	#include "DeBMP.h"
+Shape.c	#include "EnBMP.h"
+Shape.c	#include <math.h>
+Shape.c	#include <stdio.h>
+Shape.c	#include <stdlib.h>
+Shape.c	int main(int AC, char *AV[]);
+Shape.c	void Analyse(Color *IF, Color *OF, long Xs, long Ys, long X0, long Y0, long dX, long dY);
+Shape.c	void Convert(Color *IF, Color *OF, long Xs, long Ys);
+Show.c	byte GetB(FILE *InF);
+Show.c	ColorVec Map[0x100];
+Show.c	#define Down  0x150
+Show.c	#define Left  0x14b
+Show.c	#define Right 0x14d
+Show.c	#define Stop 3
+Show.c	#define Up 0x148
+Show.c	#include <bios.h>
+Show.c	#include <conio.h>
+Show.c	#include <dos.h>
+Show.c	#include <graph.h>
+Show.c	#include <math.h>
+Show.c	#include <stdio.h>
+Show.c	#include <stdlib.h>
+Show.c	#include <string.h>
+Show.c	int Keyboard(void);
+Show.c	int Light, Dark;
+Show.c	int main(int AC, char *AV[]);
+Show.c	typedef struct ColorVec { word R, G, B; } ColorVec;
+Show.c	typedef unsigned char byte;
+Show.c	typedef unsigned int word;
+Show.c	typedef unsigned long dword;
+Show.c	void Border(int Y0, int Y1, int X0, int X1, int C);
+Show.c	void Box(int Y0, int Y1, int X0, int X1, int C);
+Show.c	void Cursor(int On, int Hue);
+Show.c	void Error(char *Msg);
+Show.c	void FindExtremes(void);
+Show.c	void ScrInit(void);
+Show.c	void ScrReset(void);
+ShowPCX.c	byte GetB(FILE *InF);
+ShowPCX.c	byte Row[0x400];
+ShowPCX.c	#include <bios.h>
+ShowPCX.c	#include <conio.h>
+ShowPCX.c	#include <dos.h>
+ShowPCX.c	#include <graph.h>
+ShowPCX.c	#include <stdarg.h>
+ShowPCX.c	#include <stdio.h>
+ShowPCX.c	int GET(FILE *InF);
+ShowPCX.c	int Keyboard(void);
+ShowPCX.c	int main(int AC, char *AV[]);
+ShowPCX.c	typedef unsigned char byte;
+ShowPCX.c	typedef unsigned int word;
+ShowPCX.c	void PutString(int Y, int X, int Hue, const char *Format, ...);
+ShowPCX.c	void ScrInit(void);
+ShowPCX.c	void ScrReset(void);
+ShowPCX.c	void Show(char *File, int Back);
+ShowPCX.c	word Expand[0x10];
+ShowPCX.c	word GetW(FILE *InF);
+Sigma.c	#include "DeBMP.h"
+Sigma.c	#include "EnBMP.h"
+Sigma.c	#include <stdio.h>
+Sigma.c	#include <stdlib.h>
+Sigma.c	int main(int AC, char *AV[]);
+Sigma.c	void Convert(Color *IF0, Color *IF1, Color *OF, long Xs, long Ys);
+SmearJoin.c	ColorImage GetImage(char *Path);
+SmearJoin.c	ColorImage NewColorImage(long Xs, long Ys);
+SmearJoin.c	#include "DeBMP.h"
+SmearJoin.c	#include "EnBMP.h"
+SmearJoin.c	#include <math.h>
+SmearJoin.c	#include <stdio.h>
+SmearJoin.c	#include <stdlib.h>
+SmearJoin.c	int main(int AC, char *AV[]);
+SmearJoin.c	int PutImage(ColorImage Im, char *Path);
+SmearJoin.c	typedef struct ColorImage { Color *Frame; long Xs, Ys; } *ColorImage;
+SmearJoin.c	void FreeColorImage(ColorImage Im);
+Speck2.c	ColorImage GetImage(char *Path);
+Speck2.c	const unsigned NS = 3;
+Speck2.c	#else
+Speck2.c	#endif
+Speck2.c	#ifdef CCIR601_1
+Speck2.c	#include "DeBMP.h"
+Speck2.c	#include "EnBMP.h"
+Speck2.c	#include <math.h>
+Speck2.c	#include <stdio.h>
+Speck2.c	#include <stdlib.h>
+Speck2.c	int AddStats(ColorImage Im, ColorImage ImY, Stat SG, Stat SB);
+Speck2.c	int CompileStat(Stat S);
+Speck2.c	int Convert(ColorImage Im, ColorImage ImY, Stat SG, Stat SB);
+Speck2.c	int main(int AC, char *AV[]);
+Speck2.c	typedef struct ColorImage { unsigned Xs, Ys; Color *Frame; } *ColorImage;
+Speck2.c	typedef struct Stat { double ReX[3][0x100]; } *Stat;
+Speck2.c	void AddStat(Stat S, double dN, double B, double G, double R);
+Speck2.c	void ClearStat(Stat S);
+Speck2.c	void DeColor(double H[3], double *BP, double *GP, double *RP);
+Speck2.c	void EnColor(double B, double G, double R, double H[3]);
+Speck2.c	void FreeColorImage(ColorImage Im);
+Speck2.c	void NormalizeStat(Stat SG, Stat SB);
+Speck2.c	void ReColor(Stat SG, Stat SB, double *BP, double *GP, double *RP);
+Sprite.c	ColorImage GetImage(char *Path);
+Sprite.c	ColorImage NewColorImage(long Xs, long Ys);
+Sprite.c	const double MagO = 200.0;
+Sprite.c	const long Alp = 0x80;
+Sprite.c	const long Bet = 0xff;
+Sprite.c	#define HI 0x700
+Sprite.c	#define HW (6*Alp + 7*Bet + 1)
+Sprite.c	double DeColor(Color CP);
+Sprite.c	#include "DeBMP.h"
+Sprite.c	#include "EnBMP.h"
+Sprite.c	#include <math.h>
+Sprite.c	#include <stdio.h>
+Sprite.c	#include <stdlib.h>
+Sprite.c	int main(int AC, char *AV[]);
+Sprite.c	int PutImage(ColorImage Im, char *Path);
+Sprite.c	long BGRtoH(int B, int G, int R);
+Sprite.c	long RoundTo(double X);
+Sprite.c	long RoundUp(double X);
+Sprite.c	typedef struct ColorImage { Color *Frame; long Xs, Ys; } *ColorImage;
+Sprite.c	void AddSprite(Color *IF, Color *IFM, Color *IFX, long IXs, long IYs, Color *OF, Color *OFX, long OXs, long OYs, double X0, double Y0, double U0);
+Sprite.c	void AverageC(Color C0, Color C1, double R);
+Sprite.c	void AverageH(Color C0, Color C1, double R);
+Sprite.c	void EnColor(double U, Color CP);
+Sprite.c	void FreeColorImage(ColorImage Im);
+Sprite.c	void HtoBGR(long H, int *BP, int *GP, int *RP);
+Stats.c	#include "DeBMP.h"
+Stats.c	#include <math.h>
+Stats.c	#include <stdio.h>
+Stats.c	#include <stdlib.h>
+Stats.c	int main(int AC, char *AV[]);
+Stats.c	void Analyse(Color *IF, long Xs, long Ys, long X0, long Y0, long dX, long dY);
+Stereo.c	ColorImage GetImage(char *Path);
+Stereo.c	ColorImage NewColorImage(long Xs, long Ys);
+Stereo.c	const double MagI = 200.0;
+Stereo.c	const double MagO = 200.0;
+Stereo.c	const long Alp = 0x80;
+Stereo.c	const long Bet = 0xff;
+Stereo.c	const long HI = 0x700;
+Stereo.c	#define HW (6*Alp + 7*Bet + 1)
+Stereo.c	double DeColor(Color C);
+Stereo.c	#include "DeBMP.h"
+Stereo.c	#include "EnBMP.h"
+Stereo.c	#include <math.h>
+Stereo.c	#include <stdio.h>
+Stereo.c	#include <stdlib.h>
+Stereo.c	int Convert(Color *IF, Color *IFX, double IX0, double IY0, long IXs, long IYs, Color *OF, Color *OFX, double OX0, double OY0, long OXs, long OYs, double Ax, double Ay, double Az, double Zoom);
+Stereo.c	int main(int AC, char *AV[]);
+Stereo.c	int PutImage(ColorImage Im, char *Path);
+Stereo.c	long BGRtoH(long B, long G, long R);
+Stereo.c	Segment PreCompile(double Radius, unsigned *SegsP);
+Stereo.c	typedef struct ColorImage { Color *Frame; long Xs, Ys; } *ColorImage;
+Stereo.c	typedef struct Segment { long dX, dY; } *Segment;
+Stereo.c	void EnColor(double U, Color C);
+Stereo.c	void FreeColorImage(ColorImage Im);
+Stereo.c	void HtoBGR(long H, int *BP, int *GP, int *RP);
+StripeBMP.c	bool DoX = false;
+StripeBMP.c	bool DoY = false;
+StripeBMP.c	double DeColor(Color C);
+StripeBMP.c	GradeImage GetImage(char *Path);
+StripeBMP.c	GradeImage NewGradeImage(long Xs, long Ys);
+StripeBMP.c	#include "DeBMP.h"
+StripeBMP.c	#include "EnBMP.h"
+StripeBMP.c	#include <math.h>
+StripeBMP.c	#include <stdio.h>
+StripeBMP.c	#include <stdlib.h>
+StripeBMP.c	#include <string.h>
+StripeBMP.c	int Fs = 1;
+StripeBMP.c	int main(int AC, char *AV[]);
+StripeBMP.c	int Split(GradeImage ImA, char *Path);
+StripeBMP.c	long RoundTo(double X);
+StripeBMP.c	typedef double *Grade;
+StripeBMP.c	typedef struct GradeImage { Grade *Frame; long Xs, Ys; } *GradeImage;
+StripeBMP.c	void EnColor(Color C, double Rho, double Lam);
+StripeBMP.c	void FreeGradeImage(GradeImage Im);
+StSrc.c	const double MagI = 200.0;
+StSrc.c	const double MagO = 200.0;
+StSrc.c	const int Radius = 25;
+StSrc.c	const long Alp = 0x80;
+StSrc.c	const long Bet = 0xff;
+StSrc.c	const long HI = 0x700;
+StSrc.c	#define HW (6*Alp + 7*Bet + 1)
+StSrc.c	double DeColor(Color C);
+StSrc.c	#include "DeBMP.h"
+StSrc.c	#include "EnBMP.h"
+StSrc.c	#include <math.h>
+StSrc.c	#include <stdio.h>
+StSrc.c	#include <stdlib.h>
+StSrc.c	int Convert(Color *IF, Color *IFX, long IXs, long IYs, Color *OF, long OX0, long OY0, long OXs, long OYs, double Ax, double Ay, double Az, double Zoom);
+StSrc.c	int DelColor(Color C0, Color C1);
+StSrc.c	int main(int AC, char *AV[]);
+StSrc.c	long BGRtoH(long B, long G, long R);
+TemMatch.c	#include "DeBMP.h"
+TemMatch.c	#include "EnBMP.h"
+TemMatch.c	#include <math.h>
+TemMatch.c	#include <stdio.h>
+TemMatch.c	#include <stdlib.h>
+TemMatch.c	int main(int AC, char *AV[]);
+TemMatch.c	void Match(Color *IF0, long Xs0, long Ys0, Color *IF1, long Xs1, long Ys1, double Min);
+UnMix.c	ColorImage GetImage(char *Path);
+UnMix.c	ColorImage NewColorImage(long Xs, long Ys);
+UnMix.c	double Weight(double R, double HiR, double LoR);
+UnMix.c	GradeImage NewGradeImage(long Xs, long Ys);
+UnMix.c	#include "DeBMP.h"
+UnMix.c	#include "EnBMP.h"
+UnMix.c	#include <math.h>
+UnMix.c	#include <stdio.h>
+UnMix.c	#include <stdlib.h>
+UnMix.c	int Convert(Color *IF, Color *IFX, Grade *Map0, Grade *Map1, long Xs, long Ys, double HiR, double LoR);
+UnMix.c	int main(int AC, char *AV[]);
+UnMix.c	int PutGrade(long Xs, long Ys, Grade *Frame0, Grade *Frame1, char *Path0, char *Path1, char *PathX);
+UnMix.c	int PutImage(ColorImage Im, char *Path);
+UnMix.c	Segment PreCompile(double HiR, double LoR, unsigned *SegsP);
+UnMix.c	typedef struct ColorImage { Color *Frame; long Xs, Ys; } *ColorImage;
+UnMix.c	typedef struct Grade { double B, G, R, W; } *Grade;
+UnMix.c	typedef struct GradeImage { Grade *Frame; long Xs, Ys; } *GradeImage;
+UnMix.c	typedef struct Segment { long dX, dY; double W; } *Segment;
+UnMix.c	void FreeColorImage(ColorImage Im);
+UnMix.c	void FreeGradeImage(GradeImage Im);
+UnRGB.c	#include "DeBMP.h"
+UnRGB.c	#include "EnBMP.h"
+UnRGB.c	#include <stdio.h>
+UnRGB.c	#include <stdlib.h>
+UnRGB.c	int main(int AC, char *AV[]);
+UnRGB.c	void Convert(Color IR, Color OR0, Color OR1, Color OR2, long Xs);
+Wipe0.c	const long Alp = 0x80;
+Wipe0.c	const long Bet = 0xff;
+Wipe0.c	const long HI = 0x700;
+Wipe0.c	#define HW (6*Alp + 7*Bet + 1)
+Wipe0.c	double DeColor(Color CP);
+Wipe0.c	#include "DeBMP.h"
+Wipe0.c	#include "EnBMP.h"
+Wipe0.c	#include <math.h>
+Wipe0.c	#include <stdio.h>
+Wipe0.c	#include <stdlib.h>
+Wipe0.c	int main(int AC, char *AV[]);
+Wipe0.c	long BGRtoH(long B, long G, long R);
+Wipe0.c	void EnColor(double U, Color CP);
+Wipe0.c	void GetU(Color R, double *U, long Xs);
+Wipe0.c	void HtoBGR(long H, int *BP, int *GP, int *RP);
+Wipe0.c	void MixRow(Color IR, double *IU, Color OR, double *OU, long Xs, double ThU, double dU);
+Wipe0.c	void PutU(Color R, double *U, long Xs);
+Wipe.c	const long Alp = 0x80;
+Wipe.c	const long Bet = 0xff;
+Wipe.c	const long HI = 0x700;
+Wipe.c	#define HW (6*Alp + 7*Bet + 1)
+Wipe.c	double DeColor(Color CP);
+Wipe.c	#include "DeBMP.h"
+Wipe.c	#include "EnBMP.h"
+Wipe.c	#include <math.h>
+Wipe.c	#include <stdio.h>
+Wipe.c	#include <stdlib.h>
+Wipe.c	int main(int AC, char *AV[]);
+Wipe.c	long BGRtoH(long B, long G, long R);
+Wipe.c	void GetU(Color R, double *U, long Xs);
+Wipe.c	void MixRow(Color IR, double *IU, Color OR, double *OU, long Xs, double ThU, double dU);
+XorBMP.c	#include "DeBMP.h"
+XorBMP.c	#include "EnBMP.h"
+XorBMP.c	#include <stdio.h>
+XorBMP.c	#include <stdlib.h>
+XorBMP.c	int main(int AC, char *AV[]);
+XorBMP.c	long Round(double D);
+XorBMP.c	void Convert(Color *IF, long IXs, long IYs, Color *OF, long OXs, long OYs);
